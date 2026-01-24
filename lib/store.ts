@@ -87,6 +87,9 @@ interface StoreState {
   deleteAppointment: (id: string) => void
   addReport: (report: Report) => void
   deleteReport: (id: string) => void
+  isSidebarOpen: boolean
+  toggleSidebar: () => void
+  closeSidebar: () => void
 }
 
 const mockTests: Test[] = [
@@ -215,6 +218,9 @@ export const useStore = create<StoreState>()(
         set((state) => ({
           reports: state.reports.filter((r) => r.id !== id),
         })),
+      isSidebarOpen: false,
+      toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
+      closeSidebar: () => set({ isSidebarOpen: false }),
     }),
     {
       name: "rahila-storage",

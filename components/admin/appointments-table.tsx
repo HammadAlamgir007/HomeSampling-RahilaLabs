@@ -3,6 +3,7 @@
 import type { Appointment } from "@/lib/store"
 import { Badge } from "@/components/ui/badge"
 import { Eye, Check, Box, X, Upload } from "lucide-react"
+import { useStore } from "@/lib/store"
 
 interface AppointmentsTableProps {
   appointments: any[]
@@ -13,6 +14,7 @@ interface AppointmentsTableProps {
 }
 
 export function AppointmentsTable({ appointments, onView, onEdit, onDelete, onStatusUpdate }: AppointmentsTableProps) {
+  const { authToken } = useStore()
   const getStatusColor = (status: string) => {
     switch (status) {
       case "pending":
@@ -108,6 +110,56 @@ export function AppointmentsTable({ appointments, onView, onEdit, onDelete, onSt
                 >
                   <Eye className="w-4 h-4 text-slate-600 dark:text-slate-400" />
                 </button>
+                <div className="relative inline-block">
+                  <input
+                    type="file"
+                    id={`file-${apt.id}`}
+                    className="hidden"
+                    accept=".pdf,.png,.jpg,.jpeg"
+                    onChange={async (e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        const file = e.target.files[0];
+                        const formData = new FormData();
+                        formData.append('file', file);
+
+                        // Ideally getting token from context or prop, but local storage fallback or assume parent handles
+                        // But here we are in a component. We need onUpload callback or handle it here if possible.
+                        // Let's use an onUpload prop if available, or fetch directly.
+                        // Given we are in NextJS client component, we access localStorage/store
+                        // But store hook rule.
+                        // Let's dispatch a custom event or use onStatusUpdate prop as proxy? No. 
+                        // Let's assume we can pass an onUpload prop.
+                        // Actually, let's just do fetch here if we can get token.
+                        // Or better: Trigger a callback passed from parent.
+                        const token = authToken;
+
+                        if (!token) { alert("Auth token missing"); return; }
+
+                        try {
+                          const res = await fetch(`http://localhost:5000/api/admin/upload-report/${apt.id}`, {
+                            method: 'POST',
+                            headers: { 'Authorization': `Bearer ${token}` },
+                            body: formData
+                          });
+                          if (res.ok) {
+                            alert("Report uploaded successfully!");
+                            window.location.reload(); // Simple reload to refresh
+                          } else {
+                            const err = await res.json();
+                            alert("Upload failed: " + err.error);
+                          }
+                        } catch (err) { console.error(err); alert("Upload error"); }
+                      }
+                    }}
+                  />
+                  <label
+                    htmlFor={`file-${apt.id}`}
+                    title="Upload Report"
+                    className="cursor-pointer p-2 hover:bg-purple-100 text-purple-600 rounded flex items-center justify-center"
+                  >
+                    <Upload className="w-4 h-4" />
+                  </label>
+                </div>
               </td>
             </tr>
           ))}

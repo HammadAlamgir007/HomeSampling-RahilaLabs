@@ -6,7 +6,7 @@ from models import db, User, Test
 
 app = Flask(__name__)
 app.config.from_object(Config)
-CORS(app)
+CORS(app, resources={r"/api/*": {"origins": "http://localhost:3005"}})
 
 db.init_app(app)
 jwt = JWTManager(app)
@@ -53,6 +53,41 @@ def init_db():
             db.session.bulk_save_objects(tests)
             db.session.commit()
             print("Seeded initial tests")
+
+        # Seed Admin User
+        from werkzeug.security import generate_password_hash
+        from datetime import datetime
+        if not User.query.filter_by(role='admin').first():
+            admin = User(
+                username="admin", 
+                email="admin@rahilalabs.com", 
+                password_hash=generate_password_hash("admin123"), 
+                role="admin",
+                status="active"
+            )
+            db.session.add(admin)
+            db.session.commit()
+            print("Seeded admin user")
+        
+        # Seed Demo Patient & Appointment
+        if not User.query.filter_by(role='patient').first():
+            patient = User(username="ali", email="ali@example.com", password_hash=generate_password_hash("password"), role="patient", phone="1234567890", city="Lahore")
+            db.session.add(patient)
+            db.session.commit()
+            
+            test = Test.query.first()
+            if test:
+                appt = Appointment(
+                    user_id=patient.id, 
+                    test_id=test.id, 
+                    appointment_date=datetime.utcnow(), 
+                    status="pending", 
+                    address="123 Main St, Lahore"
+                )
+                db.session.add(appt)
+                db.session.commit()
+                print("Seeded demo appointment")
+
 
 if __name__ == '__main__':
     init_db()

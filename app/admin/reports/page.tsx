@@ -39,9 +39,9 @@ export default function ReportsPage() {
   return (
     <div className="flex">
       <AdminSidebar />
-      <div className="flex-1 ml-64">
+      <div className="flex-1 md:ml-64 transition-all duration-300">
         <AdminNavbar />
-        <main className="p-8 bg-slate-50 dark:bg-slate-950 min-h-screen">
+        <main className="p-4 md:p-8 bg-slate-50 dark:bg-slate-950 min-h-screen">
           <div className="max-w-7xl mx-auto space-y-8">
             <div className="flex items-center justify-between">
               <div>
@@ -87,9 +87,37 @@ export default function ReportsPage() {
                             <button className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded">
                               <Eye className="w-4 h-4 text-slate-600 dark:text-slate-400" />
                             </button>
-                            <button className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded">
+                            <a
+                              href={`http://localhost:5000/api/patient/reports/${report.report_path}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={(e) => {
+                                if (!authToken) {
+                                  e.preventDefault();
+                                  alert("Unauthorized");
+                                  return;
+                                }
+                                // We need to pass auth token.
+                                // Since this is a simple anchor tag, we can't easily pass headers unless we fetch and blob.
+                                // Alternative: Use a download function.
+                                e.preventDefault();
+                                fetch(`http://localhost:5000/api/patient/reports/${report.report_path}`, {
+                                  headers: { Authorization: `Bearer ${authToken}` }
+                                })
+                                  .then(res => res.blob())
+                                  .then(blob => {
+                                    const url = window.URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.href = url;
+                                    a.download = report.report_path.split('_').slice(2).join('_'); // Cleaner filename
+                                    a.click();
+                                  })
+                                  .catch(err => console.error(err));
+                              }}
+                              className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded inline-block"
+                            >
                               <Download className="w-4 h-4 text-slate-600 dark:text-slate-400" />
-                            </button>
+                            </a>
                           </td>
                         </tr>
                       ))}

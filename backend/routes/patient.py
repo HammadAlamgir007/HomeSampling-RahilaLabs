@@ -46,9 +46,16 @@ def book_appointment():
 @patient_bp.route('/bookings', methods=['GET'])
 @jwt_required()
 def get_my_bookings():
-    current_user_id = get_jwt_identity()
-    appointments = Appointment.query.filter_by(user_id=current_user_id).order_by(Appointment.appointment_date.desc()).all()
-    return jsonify([appt.to_dict() for appt in appointments]), 200
+    current_user_id = int(get_jwt_identity())
+    print(f"Patient: Fetching bookings for user {current_user_id}")
+    try:
+        appointments = Appointment.query.filter_by(user_id=current_user_id).order_by(Appointment.appointment_date.desc()).all()
+        print(f"Patient: Found {len(appointments)} bookings")
+        serialized = [appt.to_dict() for appt in appointments]
+        return jsonify(serialized), 200
+    except Exception as e:
+        print(f"Patient: Error fetching bookings: {e}")
+        return jsonify({'error': str(e)}), 500
 
 @patient_bp.route('/bookings/<int:booking_id>', methods=['DELETE'])
 @jwt_required()
@@ -69,3 +76,42 @@ def cancel_booking(booking_id):
     db.session.commit()
     
     return jsonify({'message': 'Appointment cancelled successfully'}), 200
+
+import os
+from flask import send_from_directory, current_app
+
+@patient_bp.route('/reports/<path:filename>', methods=['GET'])
+@jwt_required()
+def download_report(filename):
+    current_user_id = int(get_jwt_identity())
+    
+    # Security: Verify ownership
+    # Filename format: report_{appointment_id}_{original_name}
+    try:
+        parts = filename.split('_')
+        if len(parts) < 2:
+             return jsonify({'error': 'Invalid filename format'}), 400
+        
+        appointment_id = int(parts[1])
+        appointment = Appointment.query.get(appointment_id)
+        
+        if not appointment:
+            return jsonify({'error': 'Appointment not found'}), 404
+            
+        if appointment.user_id != current_user_id:
+             # Check if user is admin?
+             # For simplicity, if this route is in patient_bp, we assume patient context.
+             # However, admin might want to download too. 
+             # Let's check user role if we want universal access, or assume admin uses a different route.
+             # But admin can just use this route if they have a token.
+             # Let's check role.
+             from models import User
+             user = User.query.get(current_user_id)
+             if user.role != 'admin':
+                return jsonify({'error': 'Unauthorized'}), 403
+
+    except ValueError:
+        return jsonify({'error': 'Invalid filename format'}), 400
+
+    reports_dir = os.path.join(current_app.root_path, 'uploads', 'reports')
+    return send_from_directory(reports_dir, filename, as_attachment=True)

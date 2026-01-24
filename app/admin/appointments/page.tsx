@@ -20,6 +20,12 @@ export default function AppointmentsPage() {
       const res = await fetch("http://localhost:5000/api/admin/appointments", {
         headers: { Authorization: `Bearer ${authToken}` }
       })
+
+      if (res.status === 401 || res.status === 403) {
+        window.location.href = '/admin/login'
+        return
+      }
+
       if (res.ok) {
         const data = await res.json()
         setAppointments(data)

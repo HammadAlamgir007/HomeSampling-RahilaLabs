@@ -29,17 +29,17 @@ export default function SettingsPage() {
   return (
     <div className="flex">
       <AdminSidebar />
-      <div className="flex-1 ml-64">
+      <div className="flex-1 md:ml-64 transition-all duration-300">
         <AdminNavbar />
-        <main className="p-8 bg-slate-50 dark:bg-slate-950 min-h-screen">
+        <main className="p-4 md:p-8 bg-slate-50 dark:bg-slate-950 min-h-screen">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Settings</h1>
             <p className="text-slate-600 dark:text-slate-400">Manage your account and preferences</p>
           </div>
 
-          <div className="grid grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Settings Menu */}
-            <div className="col-span-1">
+            <div className="md:col-span-1">
               <Card>
                 <nav className="space-y-2 p-4">
                   <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-400 font-medium">
@@ -63,7 +63,7 @@ export default function SettingsPage() {
             </div>
 
             {/* Settings Content */}
-            <div className="col-span-2 space-y-6">
+            <div className="md:col-span-2 space-y-6">
               {/* General Settings */}
               <Card className="p-6">
                 <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-6">

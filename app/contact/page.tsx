@@ -23,6 +23,16 @@ export default function ContactPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setSubmitted(true)
+
+    // Format the message for WhatsApp
+    const messageBody = `*New Contact Request*\n\n*Name:* ${formData.name}\n*Email:* ${formData.email}\n*Phone:* ${formData.phone}\n*Subject:* ${formData.subject}\n*Message:* ${formData.message}`
+
+    // WhatsApp URL (using the provided number 03305941025 -> 923305941025)
+    const whatsappUrl = `https://wa.me/923305941025?text=${encodeURIComponent(messageBody)}`
+
+    // Open in new tab
+    window.open(whatsappUrl, '_blank')
+
     setFormData({ name: "", email: "", phone: "", subject: "", message: "" })
     setTimeout(() => setSubmitted(false), 5000)
   }

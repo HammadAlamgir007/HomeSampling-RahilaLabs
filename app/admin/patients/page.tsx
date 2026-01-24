@@ -43,6 +43,7 @@ export default function PatientsPage() {
   const [patients, setPatients] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
+  const [editingPatient, setEditingPatient] = useState<any>(null)
 
   useEffect(() => {
     const fetchPatients = async () => {
@@ -69,16 +70,16 @@ export default function PatientsPage() {
   return (
     <div className="flex">
       <AdminSidebar />
-      <div className="flex-1 ml-64">
+      <div className="flex-1 md:ml-64 transition-all duration-300">
         <AdminNavbar />
-        <main className="p-8 bg-slate-50 dark:bg-slate-950 min-h-screen">
+        <main className="p-4 md:p-8 bg-slate-50 dark:bg-slate-950 min-h-screen">
           <div className="max-w-7xl mx-auto space-y-8">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Manage Patients</h1>
                 <p className="text-slate-600 dark:text-slate-400 mt-1">View and manage all patients</p>
               </div>
-              <Button className="bg-blue-900 hover:bg-blue-800 gap-2">
+              <Button className="bg-blue-900 hover:bg-blue-800 gap-2 w-full md:w-auto">
                 <Plus className="w-4 h-4" />
                 Add Patient
               </Button>
@@ -133,7 +134,10 @@ export default function PatientsPage() {
                             <button className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded">
                               <Eye className="w-4 h-4 text-slate-600 dark:text-slate-400" />
                             </button>
-                            <button className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded">
+                            <button
+                              className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded"
+                              onClick={() => setEditingPatient(patient)}
+                            >
                               <Edit className="w-4 h-4 text-slate-600 dark:text-slate-400" />
                             </button>
                             <button className="p-2 hover:bg-red-100 dark:hover:bg-red-900 rounded">
@@ -150,6 +154,75 @@ export default function PatientsPage() {
           </div>
         </main>
       </div>
+
+      {/* Edit Patient Modal */}
+      {editingPatient && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl w-full max-w-md p-6">
+            <h2 className="text-xl font-bold mb-4 text-slate-900 dark:text-white">Edit Patient</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1 dark:text-slate-300">Name</label>
+                <Input
+                  value={editingPatient.username || ''}
+                  onChange={(e) => setEditingPatient({ ...editingPatient, username: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1 dark:text-slate-300">Email</label>
+                <Input
+                  value={editingPatient.email || ''}
+                  onChange={(e) => setEditingPatient({ ...editingPatient, email: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1 dark:text-slate-300">Phone</label>
+                <Input
+                  value={editingPatient.phone || ''}
+                  onChange={(e) => setEditingPatient({ ...editingPatient, phone: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1 dark:text-slate-300">City</label>
+                <Input
+                  value={editingPatient.city || ''}
+                  onChange={(e) => setEditingPatient({ ...editingPatient, city: e.target.value })}
+                />
+              </div>
+              <div className="flex justify-end gap-2 mt-6">
+                <Button variant="outline" onClick={() => setEditingPatient(null)}>Cancel</Button>
+                <Button
+                  className="bg-blue-900 hover:bg-blue-800"
+                  onClick={async () => {
+                    try {
+                      const res = await fetch(`http://localhost:5000/api/admin/patients/${editingPatient.id}`, {
+                        method: 'PUT',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Authorization': `Bearer ${authToken}`
+                        },
+                        body: JSON.stringify(editingPatient)
+                      });
+                      if (res.ok) {
+                        setPatients(patients.map(p => p.id === editingPatient.id ? editingPatient : p));
+                        setEditingPatient(null);
+                      } else {
+                        const err = await res.json();
+                        alert("Failed to update: " + (err.error || "Unknown error"));
+                      }
+                    } catch (e) {
+                      console.error(e);
+                      alert("Update failed");
+                    }
+                  }}
+                >
+                  Save Changes
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

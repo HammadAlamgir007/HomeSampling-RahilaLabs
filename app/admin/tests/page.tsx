@@ -80,16 +80,16 @@ export default function TestsPage() {
   return (
     <div className="flex">
       <AdminSidebar />
-      <div className="flex-1 ml-64">
+      <div className="flex-1 md:ml-64 transition-all duration-300">
         <AdminNavbar />
-        <main className="p-8 bg-slate-50 dark:bg-slate-950 min-h-screen">
+        <main className="p-4 md:p-8 bg-slate-50 dark:bg-slate-950 min-h-screen">
           <div className="max-w-7xl mx-auto space-y-8">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Manage Tests</h1>
                 <p className="text-slate-600 dark:text-slate-400 mt-1">Manage available diagnostic tests</p>
               </div>
-              <Button onClick={handleAddTest} className="bg-blue-900 hover:bg-blue-800 gap-2">
+              <Button onClick={handleAddTest} className="bg-blue-900 hover:bg-blue-800 gap-2 w-full md:w-auto">
                 <Plus className="w-4 h-4" />
                 Add Test
               </Button>

@@ -77,16 +77,16 @@ export default function PaymentsPage() {
   return (
     <div className="flex">
       <AdminSidebar />
-      <div className="flex-1 ml-64">
+      <div className="flex-1 md:ml-64 transition-all duration-300">
         <AdminNavbar />
-        <main className="p-8 bg-slate-50 dark:bg-slate-950 min-h-screen">
+        <main className="p-4 md:p-8 bg-slate-50 dark:bg-slate-950 min-h-screen">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Payments</h1>
             <p className="text-slate-600 dark:text-slate-400">Manage payment transactions</p>
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <Card className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -137,7 +137,7 @@ export default function PaymentsPage() {
           </div>
 
           {/* Filters and Actions */}
-          <div className="flex gap-4 mb-6">
+          <div className="flex flex-col md:flex-row gap-4 mb-6">
             <Input placeholder="Search by patient name..." className="flex-1" />
             <Button variant="outline">
               <Filter className="h-4 w-4 mr-2" />

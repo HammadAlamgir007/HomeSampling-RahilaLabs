@@ -48,6 +48,63 @@ def get_dashboard_stats():
         'revenue': total_revenue
     }), 200
 
+@admin_bp.route('/activity', methods=['GET'])
+@jwt_required()
+def get_dashboard_activity():
+    # Verify admin
+    current_user_id = int(get_jwt_identity())
+    user = User.query.get(current_user_id)
+    if not user or user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    activity = []
+
+    # Get recent appointments (limit 5)
+    appointments = Appointment.query.order_by(Appointment.created_at.desc()).limit(5).all()
+    for appt in appointments:
+        patient_name = appt.user.username if appt.user else "Unknown Patient"
+        activity.append({
+            'action': f"New appointment booked by {patient_name}",
+            'time': appt.created_at,
+            'type': 'appointment'
+        })
+    
+    # Get recent new patients (limit 5)
+    new_patients = User.query.filter_by(role='patient').order_by(User.created_at.desc()).limit(5).all()
+    for patient in new_patients:
+        activity.append({
+            'action': f"New patient registered: {patient.username}",
+            'time': patient.created_at,
+            'type': 'user'
+        })
+
+    # Sort combined activity by time desc
+    activity.sort(key=lambda x: x['time'], reverse=True)
+    
+    # Format time for display (simplified relative time logic could be added here or frontend)
+    # For now sending ISO string
+    formatted_activity = []
+    for item in activity[:10]: # Return top 10 combined
+        # Simple relative time logic for demo
+        import datetime
+        now = datetime.datetime.utcnow()
+        diff = now - item['time']
+        
+        if diff.days > 0:
+            time_str = f"{diff.days} days ago"
+        elif diff.seconds // 3600 > 0:
+            time_str = f"{diff.seconds // 3600} hours ago"
+        elif diff.seconds // 60 > 0:
+            time_str = f"{diff.seconds // 60} mins ago"
+        else:
+            time_str = "Just now"
+
+        formatted_activity.append({
+            'action': item['action'],
+            'time': time_str
+        })
+
+    return jsonify(formatted_activity), 200
 @admin_bp.route('/appointments', methods=['GET'])
 @jwt_required()
 def get_appointments():
@@ -57,8 +114,15 @@ def get_appointments():
     if not user or user.role != 'admin':
         return jsonify({'error': 'Unauthorized'}), 403
 
-    appointments = Appointment.query.order_by(Appointment.appointment_date.desc()).all()
-    return jsonify([appt.to_dict() for appt in appointments]), 200
+    try:
+        appointments = Appointment.query.order_by(Appointment.appointment_date.desc()).all()
+        print(f"Admin: Found {len(appointments)} appointments")
+        serialized = [appt.to_dict() for appt in appointments]
+        print(f"Admin: Serialized data: {serialized}")
+        return jsonify(serialized), 200
+    except Exception as e:
+        print(f"Admin: Error fetching appointments: {e}")
+        return jsonify({'error': str(e)}), 500
 
 @admin_bp.route('/appointments/<int:id>/status', methods=['PUT'])
 @jwt_required()
@@ -95,6 +159,60 @@ def get_patients():
 
     patients = User.query.filter_by(role='patient').all()
     return jsonify([p.to_dict() for p in patients]), 200
+
+@admin_bp.route('/patients/<int:id>', methods=['PUT'])
+@jwt_required()
+def update_patient(id):
+    current_user_id = int(get_jwt_identity())
+    user = User.query.get(current_user_id)
+    if not user or user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    patient = User.query.get(id)
+    if not patient:
+        return jsonify({'error': 'Patient not found'}), 404
+        
+    data = request.get_json()
+    if 'username' in data:
+        patient.username = data['username']
+    if 'email' in data:
+        patient.email = data['email'] # Note: Should check uniqueness
+    if 'phone' in data:
+        patient.phone = data['phone']
+    if 'city' in data:
+        patient.city = data['city']
+    
+    db.session.commit()
+    return jsonify({'message': 'Patient updated', 'user': patient.to_dict()}), 200
+
+@admin_bp.route('/appointments/<int:id>', methods=['PUT'])
+@jwt_required()
+def update_appointment(id):
+    current_user_id = int(get_jwt_identity())
+    user = User.query.get(current_user_id)
+    if not user or user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    appointment = Appointment.query.get(id)
+    if not appointment:
+        return jsonify({'error': 'Appointment not found'}), 404
+        
+    data = request.get_json()
+    # Allow updating date, status, test, address
+    if 'date' in data:
+        from datetime import datetime
+        try:
+             date_str = data['date'].replace('Z', '+00:00')
+             appointment.appointment_date = datetime.fromisoformat(date_str)
+        except:
+             pass
+    if 'status' in data:
+        appointment.status = data['status']
+    if 'address' in data:
+        appointment.address = data['address']
+        
+    db.session.commit()
+    return jsonify({'message': 'Appointment updated', 'appointment': appointment.to_dict()}), 200
 
 # --- Test Management ---
 
@@ -157,6 +275,7 @@ def allowed_file(filename):
 @admin_bp.route('/upload-report/<int:appointment_id>', methods=['POST'])
 @jwt_required()
 def upload_report(appointment_id):
+    from flask import current_app # Import needed here
     # Check if admin
     current_user_id = int(get_jwt_identity())
     user = User.query.get(current_user_id)
@@ -173,11 +292,13 @@ def upload_report(appointment_id):
     if file and allowed_file(file.filename):
         filename = secure_filename(f"report_{appointment_id}_{file.filename}")
         
-        # Ensure directory exists
-        if not os.path.exists(UPLOAD_FOLDER):
-            os.makedirs(UPLOAD_FOLDER)
+        # Use absolute path based on app location
+        base_dir = os.path.join(current_app.root_path, 'uploads', 'reports')
+        
+        if not os.path.exists(base_dir):
+            os.makedirs(base_dir)
             
-        file.save(os.path.join(UPLOAD_FOLDER, filename))
+        file.save(os.path.join(base_dir, filename))
         
         # Update db
         appointment = Appointment.query.get(appointment_id)

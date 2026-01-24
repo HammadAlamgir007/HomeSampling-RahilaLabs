@@ -21,7 +21,9 @@ const monthlyData = [
 ]
 
 export default function AdminDashboard() {
-  const { appointments, authToken } = useStore()
+  const { authToken } = useStore()
+  const [recentActivity, setRecentActivity] = useState<any[]>([])
+  const [appointments, setAppointments] = useState<any[]>([])
   const [stats, setStats] = useState({
     total_patients: 0,
     total_tests: 0,
@@ -31,34 +33,61 @@ export default function AdminDashboard() {
   })
 
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchDashboardData = async () => {
       if (!authToken) return
+
       try {
-        const res = await fetch("http://localhost:5000/api/admin/stats", {
-          headers: {
-            Authorization: `Bearer ${authToken}`
-          }
+        // Fetch Stats
+        const statsRes = await fetch("http://localhost:5000/api/admin/stats", {
+          headers: { Authorization: `Bearer ${authToken}` }
         })
-        if (res.ok) {
-          const data = await res.json()
-          setStats(data)
+
+        if (statsRes.status === 401 || statsRes.status === 403) {
+          // Invalid token or unauthorized
+          window.location.href = '/admin/login'
+          return
         }
+
+        if (statsRes.ok) {
+          setStats(await statsRes.json())
+        }
+
+        // Fetch Recent Activity
+        const activityRes = await fetch("http://localhost:5000/api/admin/activity", {
+          headers: { Authorization: `Bearer ${authToken}` }
+        })
+        if (activityRes.ok) {
+          setRecentActivity(await activityRes.json())
+        }
+
+        // Fetch Recent Appointments
+        const appointmentsRes = await fetch("http://localhost:5000/api/admin/appointments", {
+          headers: { Authorization: `Bearer ${authToken}` }
+        })
+        if (appointmentsRes.ok) {
+          setAppointments(await appointmentsRes.json())
+        }
+
       } catch (error) {
-        console.error("Failed to fetch admin stats")
+        console.error("Failed to fetch dashboard data")
       }
     }
-    fetchStats()
+
+    fetchDashboardData()
+    // Poll every 5 seconds for real-time updates
+    const interval = setInterval(fetchDashboardData, 5000)
+    return () => clearInterval(interval)
   }, [authToken])
 
   const totalPatients = stats.total_patients
   const totalTests = stats.total_tests
-  const pendingReports = stats.pending_bookings // Using pending bookings as proxy for now
-  const todayAppointments = stats.total_bookings // Showing total for now, API needs today filter
+  const pendingReports = stats.pending_bookings
+  const todayAppointments = stats.total_bookings
 
   return (
     <div className="flex">
       <AdminSidebar />
-      <div className="flex-1 ml-64">
+      <div className="flex-1 md:ml-64">
         <AdminNavbar />
         <main className="p-8 bg-slate-50 dark:bg-slate-950 min-h-screen">
           <div className="max-w-7xl mx-auto space-y-8">
@@ -125,16 +154,18 @@ export default function AdminDashboard() {
             {/* Appointments Table */}
             <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
               <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div>
                     <CardTitle>Recent Appointments</CardTitle>
                     <CardDescription>Upcoming and recent bookings</CardDescription>
                   </div>
-                  <Button className="bg-blue-900 hover:bg-blue-800">New Appointment</Button>
+                  <Button className="bg-blue-900 hover:bg-blue-800 w-full md:w-auto">New Appointment</Button>
                 </div>
               </CardHeader>
               <CardContent>
-                <AppointmentsTable appointments={appointments} />
+                <div className="overflow-x-auto">
+                  <AppointmentsTable appointments={appointments} />
+                </div>
               </CardContent>
             </Card>
 
@@ -145,21 +176,19 @@ export default function AdminDashboard() {
                   <CardTitle>Recent Activity</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {[
-                    { action: "Report uploaded for Ali Ahmed", time: "2 hours ago" },
-                    { action: "New appointment booked by Fatima Khan", time: "4 hours ago" },
-                    { action: "Test added: COVID-19 Antibody", time: "1 day ago" },
-                    { action: "Payment received: PKR 5,000", time: "1 day ago" },
-                    { action: "New staff member added: Dr. Hassan", time: "2 days ago" },
-                  ].map((item, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between py-3 border-b border-slate-200 dark:border-slate-800 last:border-0"
-                    >
-                      <p className="text-slate-700 dark:text-slate-300">{item.action}</p>
-                      <span className="text-xs text-slate-500 dark:text-slate-400">{item.time}</span>
-                    </div>
-                  ))}
+                  {recentActivity.length > 0 ? (
+                    recentActivity.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between py-3 border-b border-slate-200 dark:border-slate-800 last:border-0"
+                      >
+                        <p className="text-slate-700 dark:text-slate-300">{item.action}</p>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">{item.time}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center text-slate-500 py-4">No recent activity</div>
+                  )}
                 </CardContent>
               </Card>
 

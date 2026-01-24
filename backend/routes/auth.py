@@ -19,7 +19,7 @@ def register():
     password = data['password']
 
     try:
-        validate_email(email)
+        validate_email(email, check_deliverability=False)
     except EmailNotValidError:
         return jsonify({'error': 'Invalid email format'}), 400
 
@@ -31,7 +31,16 @@ def register():
 
     # Create User
     hashed_password = generate_password_hash(password)
-    new_user = User(username=username, email=email, password_hash=hashed_password, role='patient')
+    phone = data.get('phone')
+    city = data.get('city')
+    new_user = User(
+        username=username, 
+        email=email, 
+        password_hash=hashed_password, 
+        role='patient',
+        phone=phone,
+        city=city
+    )
     
     db.session.add(new_user)
     db.session.commit()

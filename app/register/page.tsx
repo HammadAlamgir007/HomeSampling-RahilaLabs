@@ -16,6 +16,7 @@ export default function RegisterPage() {
     name: "",
     email: "",
     phone: "",
+    city: "",
     dateOfBirth: "",
     password: "",
     confirmPassword: "",
@@ -29,8 +30,10 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
+    console.log("Submitting form:", formData)
 
     if (!formData.name || !formData.email || !formData.phone || !formData.dateOfBirth || !formData.password) {
+      console.log("Validation failed. Missing fields.")
       setError("Please fill in all fields")
       return
     }
@@ -47,6 +50,7 @@ export default function RegisterPage() {
 
     // Mock registration
     try {
+      console.log("Sending request to backend...")
       const response = await fetch("http://localhost:5000/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -54,10 +58,13 @@ export default function RegisterPage() {
           username: formData.name,
           email: formData.email,
           password: formData.password,
+          phone: formData.phone,
+          city: formData.city
         }),
       })
 
       const data = await response.json()
+      console.log("Response:", data)
 
       if (!response.ok) {
         throw new Error(data.error || "Registration failed")
@@ -66,6 +73,7 @@ export default function RegisterPage() {
       // Automatically log in or redirect to login
       router.push("/login")
     } catch (err: any) {
+      console.error("Registration error:", err)
       setError(err.message)
     }
   }
@@ -119,6 +127,18 @@ export default function RegisterPage() {
                   onChange={handleChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                   placeholder="9876543210"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                <input
+                  type="text"
+                  name="city"
+                  value={formData.city}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  placeholder="Lahore"
                 />
               </div>
 
