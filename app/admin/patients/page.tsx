@@ -5,7 +5,8 @@ import { AdminNavbar } from "@/components/admin/admin-navbar"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useStore } from "@/lib/store"
 import { searchItems } from "@/lib/search-utils"
 import { Plus, Search, Edit, Trash2, Eye } from "lucide-react"
 
@@ -38,9 +39,32 @@ const mockPatients = [
 ]
 
 export default function PatientsPage() {
+  const { authToken } = useStore() // Get auth token
+  const [patients, setPatients] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
 
-  const filteredPatients = searchItems(mockPatients, searchTerm, ["name", "email", "phone", "city"])
+  useEffect(() => {
+    const fetchPatients = async () => {
+      if (!authToken) return
+      try {
+        const res = await fetch("http://localhost:5000/api/admin/patients", {
+          headers: { Authorization: `Bearer ${authToken}` }
+        })
+        if (res.ok) {
+          const data = await res.json()
+          setPatients(data)
+        }
+      } catch (error) {
+        console.error("Failed to fetch patients")
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchPatients()
+  }, [authToken])
+
+  const filteredPatients = searchItems(patients, searchTerm, ["username", "email"])
 
   return (
     <div className="flex">
@@ -91,17 +115,16 @@ export default function PatientsPage() {
                           key={patient.id}
                           className="border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
                         >
-                          <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">{patient.name}</td>
+                          <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">{patient.username}</td>
                           <td className="px-6 py-4 text-slate-600 dark:text-slate-400">{patient.email}</td>
                           <td className="px-6 py-4 text-slate-600 dark:text-slate-400">{patient.phone}</td>
                           <td className="px-6 py-4 text-slate-600 dark:text-slate-400">{patient.city}</td>
                           <td className="px-6 py-4">
                             <span
-                              className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                patient.status === "active"
-                                  ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                                  : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
-                              }`}
+                              className={`px-3 py-1 rounded-full text-xs font-medium ${patient.status === "active"
+                                ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                                : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+                                }`}
                             >
                               {patient.status}
                             </span>

@@ -1,6 +1,7 @@
 "use client"
 
 import { useStore } from "@/lib/store"
+import { useEffect, useState } from "react"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
 import { AdminNavbar } from "@/components/admin/admin-navbar"
 import { StatCardAdmin } from "@/components/admin/stat-card-admin"
@@ -20,12 +21,39 @@ const monthlyData = [
 ]
 
 export default function AdminDashboard() {
-  const { appointments } = useStore()
+  const { appointments, authToken } = useStore()
+  const [stats, setStats] = useState({
+    total_patients: 0,
+    total_tests: 0,
+    pending_bookings: 0,
+    total_bookings: 0,
+    revenue: 0
+  })
 
-  const totalPatients = 1250
-  const totalTests = 3840
-  const pendingReports = 28
-  const todayAppointments = appointments.length
+  useEffect(() => {
+    const fetchStats = async () => {
+      if (!authToken) return
+      try {
+        const res = await fetch("http://localhost:5000/api/admin/stats", {
+          headers: {
+            Authorization: `Bearer ${authToken}`
+          }
+        })
+        if (res.ok) {
+          const data = await res.json()
+          setStats(data)
+        }
+      } catch (error) {
+        console.error("Failed to fetch admin stats")
+      }
+    }
+    fetchStats()
+  }, [authToken])
+
+  const totalPatients = stats.total_patients
+  const totalTests = stats.total_tests
+  const pendingReports = stats.pending_bookings // Using pending bookings as proxy for now
+  const todayAppointments = stats.total_bookings // Showing total for now, API needs today filter
 
   return (
     <div className="flex">
@@ -52,7 +80,7 @@ export default function AdminDashboard() {
               <StatCardAdmin icon={TestTube} label="Total Tests" value={totalTests} change="8" changeType="positive" />
               <StatCardAdmin
                 icon={FileText}
-                label="Pending Reports"
+                label="Pending Bookings"
                 value={pendingReports}
                 change="5"
                 changeType="negative"

@@ -28,8 +28,19 @@ const menuItems = [
   { icon: Settings, label: "Settings", href: "/admin/settings" },
 ]
 
+import { useStore } from "@/lib/store"
+import { useRouter } from "next/navigation"
+
 export function AdminSidebar() {
   const pathname = usePathname()
+  const router = useRouter()
+  const { setAuthToken, setAdmin } = useStore()
+
+  const handleLogout = () => {
+    setAuthToken(null)
+    setAdmin(null)
+    router.push("/admin/login")
+  }
 
   return (
     <aside className="w-64 bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 fixed left-0 top-0 h-screen overflow-y-auto">
@@ -68,7 +79,10 @@ export function AdminSidebar() {
       </nav>
 
       <div className="p-4 border-t border-slate-200 dark:border-slate-800 absolute bottom-0 w-full">
-        <button className="flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-950 w-full transition-colors">
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-950 w-full transition-colors"
+        >
           <LogOut className="w-5 h-5" />
           <span className="font-medium">Logout</span>
         </button>

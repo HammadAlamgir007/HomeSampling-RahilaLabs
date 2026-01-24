@@ -1,4 +1,5 @@
 "use client"
+import { useState, useEffect } from "react"
 
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
 import { AdminNavbar } from "@/components/admin/admin-navbar"
@@ -9,7 +10,48 @@ import { AppointmentsTable } from "@/components/admin/appointments-table"
 import { Plus } from "lucide-react"
 
 export default function AppointmentsPage() {
-  const { appointments, updateAppointment, deleteAppointment } = useStore()
+  const { authToken } = useStore()
+  const [appointments, setAppointments] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const fetchAppointments = async () => {
+    if (!authToken) return
+    try {
+      const res = await fetch("http://localhost:5000/api/admin/appointments", {
+        headers: { Authorization: `Bearer ${authToken}` }
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setAppointments(data)
+      }
+    } catch (error) {
+      console.error("Failed to fetch appointments")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchAppointments()
+  }, [authToken])
+
+  const handleStatusUpdate = async (id: number, newStatus: string) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/admin/appointments/${id}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`
+        },
+        body: JSON.stringify({ status: newStatus })
+      })
+      if (res.ok) {
+        fetchAppointments() // Refresh list
+      }
+    } catch (error) {
+      console.error("Failed to update status")
+    }
+  }
 
   return (
     <div className="flex">
@@ -35,11 +77,12 @@ export default function AppointmentsPage() {
                 <CardDescription>Total: {appointments.length} appointments</CardDescription>
               </CardHeader>
               <CardContent>
-                <AppointmentsTable
-                  appointments={appointments}
-                  onEdit={(id) => console.log("Edit:", id)}
-                  onDelete={deleteAppointment}
-                />
+                {loading ? <p>Loading...</p> : (
+                  <AppointmentsTable
+                    appointments={appointments}
+                    onStatusUpdate={handleStatusUpdate}
+                  />
+                )}
               </CardContent>
             </Card>
           </div>
