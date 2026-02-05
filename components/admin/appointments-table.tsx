@@ -1,20 +1,57 @@
 "use client"
 
+import { useState } from "react"
 import type { Appointment } from "@/lib/store"
 import { Badge } from "@/components/ui/badge"
-import { Eye, Check, Box, X, Upload } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Eye, Check, Box, X, Upload, UserPlus } from "lucide-react"
 import { useStore } from "@/lib/store"
 
 interface AppointmentsTableProps {
   appointments: any[]
+  riders?: any[]
   onView?: (id: string) => void
   onEdit?: (id: string) => void
   onDelete?: (id: string) => void
   onStatusUpdate?: (id: number, status: string) => void
+  onRiderAssignment?: (appointmentId: number, riderId: number) => Promise<{ success: boolean; message: string }>
 }
 
-export function AppointmentsTable({ appointments, onView, onEdit, onDelete, onStatusUpdate }: AppointmentsTableProps) {
+export function AppointmentsTable({ appointments, riders = [], onView, onEdit, onDelete, onStatusUpdate, onRiderAssignment }: AppointmentsTableProps) {
   const { authToken } = useStore()
+  const [selectedRiders, setSelectedRiders] = useState<{ [key: number]: number }>({})
+  const [assigningRider, setAssigningRider] = useState<number | null>(null)
+  const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
+
+  const handleRiderSelect = (appointmentId: number, riderId: number) => {
+    setSelectedRiders(prev => ({ ...prev, [appointmentId]: riderId }))
+  }
+
+  const handleAssignClick = async (appointmentId: number) => {
+    const riderId = selectedRiders[appointmentId]
+    if (!riderId) {
+      setMessage({ text: 'Please select a rider first', type: 'error' })
+      setTimeout(() => setMessage(null), 3000)
+      return
+    }
+
+    setAssigningRider(appointmentId)
+    const result = await onRiderAssignment?.(appointmentId, riderId)
+    setAssigningRider(null)
+
+    if (result) {
+      setMessage({ text: result.message, type: result.success ? 'success' : 'error' })
+      setTimeout(() => setMessage(null), 3000)
+      if (result.success) {
+        setSelectedRiders(prev => {
+          const newState = { ...prev }
+          delete newState[appointmentId]
+          return newState
+        })
+      }
+    }
+  }
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "pending":
@@ -30,8 +67,15 @@ export function AppointmentsTable({ appointments, onView, onEdit, onDelete, onSt
     }
   }
 
+  const availableRiders = riders.filter(r => r.availability_status === 'available')
+
   return (
     <div className="overflow-x-auto">
+      {message && (
+        <div className={`mb-4 p-3 rounded ${message.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+          {message.text}
+        </div>
+      )}
       <table className="w-full text-sm">
         <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
           <tr>
@@ -76,89 +120,120 @@ export function AppointmentsTable({ appointments, onView, onEdit, onDelete, onSt
                 </Badge>
                 {apt.report_path && <div className="mt-1 text-[10px] text-blue-600 font-semibold">Report Ready</div>}
               </td>
-              <td className="px-6 py-4 flex gap-2">
-                {apt.status === 'pending' && (
-                  <>
+              <td className="px-6 py-4">
+                <div className="flex gap-2 items-center">
+                  {apt.status === 'pending' && (
+                    <>
+                      <div className="flex gap-2 items-center">
+                        <select
+                          value={selectedRiders[apt.id] || ''}
+                          onChange={(e) => handleRiderSelect(apt.id, Number(e.target.value))}
+                          className="text-xs border rounded px-2 py-1 min-w-[120px]"
+                          disabled={assigningRider === apt.id}
+                        >
+                          <option value="">Select Rider</option>
+                          {availableRiders.map(rider => (
+                            <option key={rider.id} value={rider.id}>
+                              {rider.name}
+                            </option>
+                          ))}
+                        </select>
+                        <Button
+                          size="sm"
+                          onClick={() => handleAssignClick(apt.id)}
+                          disabled={assigningRider === apt.id || !selectedRiders[apt.id]}
+                          className="text-xs"
+                        >
+                          {assigningRider === apt.id ? (
+                            <span className="flex items-center gap-1">
+                              <span className="animate-spin">⏳</span> Assigning...
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1">
+                              <UserPlus className="w-3 h-3" /> Assign
+                            </span>
+                          )}
+                        </Button>
+                      </div>
+                      <button
+                        title="Decline Appointment"
+                        onClick={() => onStatusUpdate?.(apt.id, 'cancelled')}
+                        className="p-2 hover:bg-red-100 text-red-600 rounded"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </>
+                  )}
+                  {apt.rider && (
+                    <div className="text-xs text-gray-600">
+                      Rider: <span className="font-semibold">{apt.rider.name}</span>
+                    </div>
+                  )}
+                  {apt.status === 'confirmed' && (
                     <button
-                      title="Confirm Appointment"
-                      onClick={() => onStatusUpdate?.(apt.id, 'confirmed')}
-                      className="p-2 hover:bg-blue-100 text-blue-600 rounded"
+                      title="Mark Completed"
+                      onClick={() => onStatusUpdate?.(apt.id, 'completed')}
+                      className="p-2 hover:bg-green-100 text-green-600 rounded"
                     >
-                      <Check className="w-4 h-4" />
+                      <Box className="w-4 h-4" />
                     </button>
-                    <button
-                      title="Decline Appointment"
-                      onClick={() => onStatusUpdate?.(apt.id, 'cancelled')}
-                      className="p-2 hover:bg-red-100 text-red-600 rounded"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </>
-                )}
-                {apt.status === 'confirmed' && (
+                  )}
                   <button
-                    title="Mark Completed"
-                    onClick={() => onStatusUpdate?.(apt.id, 'completed')}
-                    className="p-2 hover:bg-green-100 text-green-600 rounded"
+                    onClick={() => onView?.(apt.id)}
+                    className="p-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded"
                   >
-                    <Box className="w-4 h-4" />
+                    <Eye className="w-4 h-4 text-slate-600 dark:text-slate-400" />
                   </button>
-                )}
-                <button
-                  onClick={() => onView?.(apt.id)}
-                  className="p-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded"
-                >
-                  <Eye className="w-4 h-4 text-slate-600 dark:text-slate-400" />
-                </button>
-                <div className="relative inline-block">
-                  <input
-                    type="file"
-                    id={`file-${apt.id}`}
-                    className="hidden"
-                    accept=".pdf,.png,.jpg,.jpeg"
-                    onChange={async (e) => {
-                      if (e.target.files && e.target.files[0]) {
-                        const file = e.target.files[0];
-                        const formData = new FormData();
-                        formData.append('file', file);
+                  <div className="relative inline-block">
+                    <input
+                      type="file"
+                      id={`file-${apt.id}`}
+                      className="hidden"
+                      accept=".pdf,.png,.jpg,.jpeg"
+                      onChange={async (e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          const file = e.target.files[0];
+                          const formData = new FormData();
+                          formData.append('file', file);
 
-                        // Ideally getting token from context or prop, but local storage fallback or assume parent handles
-                        // But here we are in a component. We need onUpload callback or handle it here if possible.
-                        // Let's use an onUpload prop if available, or fetch directly.
-                        // Given we are in NextJS client component, we access localStorage/store
-                        // But store hook rule.
-                        // Let's dispatch a custom event or use onStatusUpdate prop as proxy? No. 
-                        // Let's assume we can pass an onUpload prop.
-                        // Actually, let's just do fetch here if we can get token.
-                        // Or better: Trigger a callback passed from parent.
-                        const token = authToken;
+                          // Ideally getting token from context or prop, but local storage fallback or assume parent handles
+                          // But here we are in a component. We need onUpload callback or handle it here if possible.
+                          // Let's use an onUpload prop if available, or fetch directly.
+                          // Given we are in NextJS client component, we access localStorage/store
+                          // But store hook rule.
+                          // Let's dispatch a custom event or use onStatusUpdate prop as proxy? No. 
+                          // Let's assume we can pass an onUpload prop.
+                          // Actually, let's just do fetch here if we can get token.
+                          // Or better: Trigger a callback passed from parent.
+                          const token = authToken;
 
-                        if (!token) { alert("Auth token missing"); return; }
+                          if (!token) { alert("Auth token missing"); return; }
 
-                        try {
-                          const res = await fetch(`http://localhost:5000/api/admin/upload-report/${apt.id}`, {
-                            method: 'POST',
-                            headers: { 'Authorization': `Bearer ${token}` },
-                            body: formData
-                          });
-                          if (res.ok) {
-                            alert("Report uploaded successfully!");
-                            window.location.reload(); // Simple reload to refresh
-                          } else {
-                            const err = await res.json();
-                            alert("Upload failed: " + err.error);
-                          }
-                        } catch (err) { console.error(err); alert("Upload error"); }
-                      }
-                    }}
-                  />
-                  <label
-                    htmlFor={`file-${apt.id}`}
-                    title="Upload Report"
-                    className="cursor-pointer p-2 hover:bg-purple-100 text-purple-600 rounded flex items-center justify-center"
-                  >
-                    <Upload className="w-4 h-4" />
-                  </label>
+                          try {
+                            const res = await fetch(`http://localhost:5000/api/admin/upload-report/${apt.id}`, {
+                              method: 'POST',
+                              headers: { 'Authorization': `Bearer ${token}` },
+                              body: formData
+                            });
+                            if (res.ok) {
+                              alert("Report uploaded successfully!");
+                              window.location.reload(); // Simple reload to refresh
+                            } else {
+                              const err = await res.json();
+                              alert("Upload failed: " + err.error);
+                            }
+                          } catch (err) { console.error(err); alert("Upload error"); }
+                        }
+                      }}
+                    />
+                    <label
+                      htmlFor={`file-${apt.id}`}
+                      title="Upload Report"
+                      className="cursor-pointer p-2 hover:bg-purple-100 text-purple-600 rounded flex items-center justify-center"
+                    >
+                      <Upload className="w-4 h-4" />
+                    </label>
+                  </div>
                 </div>
               </td>
             </tr>

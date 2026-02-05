@@ -27,8 +27,8 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`font-sans antialiased`}>
-        <ThemeProvider attribute="class" defaultTheme="light" suppressHydrationWarning>
+      <body className={`font-sans antialiased`} suppressHydrationWarning>
+        <ThemeProvider attribute="class" defaultTheme="light">
           {children}
         </ThemeProvider>
         <Analytics />

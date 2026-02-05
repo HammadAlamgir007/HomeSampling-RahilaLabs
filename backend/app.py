@@ -2,11 +2,12 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from config import Config
-from models import db, User, Test
+from models import db, User, Test, Appointment, Rider
 
 app = Flask(__name__)
 app.config.from_object(Config)
-CORS(app, resources={r"/api/*": {"origins": "http://localhost:3005"}})
+# Allow all origins, methods, and headers for development
+CORS(app, resources={r"/*": {"origins": "*", "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"], "allow_headers": "*"}})
 
 db.init_app(app)
 jwt = JWTManager(app)
@@ -34,6 +35,9 @@ app.register_blueprint(patient_bp, url_prefix='/api/patient')
 
 from routes.admin import admin_bp
 app.register_blueprint(admin_bp, url_prefix='/api/admin')
+
+from routes.rider import rider_bp
+app.register_blueprint(rider_bp, url_prefix='/api/rider')
 
 @app.route('/health')
 def health_check():
@@ -87,6 +91,28 @@ def init_db():
                 db.session.add(appt)
                 db.session.commit()
                 print("Seeded demo appointment")
+        
+        # Seed Demo Riders
+        if not Rider.query.first():
+            riders = [
+                Rider(
+                    name="Ahmed Khan",
+                    email="ahmed@rider.com",
+                    phone="03001234567",
+                    password_hash=generate_password_hash("rider123"),
+                    availability_status="available"
+                ),
+                Rider(
+                    name="Hassan Ali",
+                    email="hassan@rider.com",
+                    phone="03009876543",
+                    password_hash=generate_password_hash("rider123"),
+                    availability_status="available"
+                )
+            ]
+            db.session.bulk_save_objects(riders)
+            db.session.commit()
+            print("Seeded demo riders")
 
 
 if __name__ == '__main__':

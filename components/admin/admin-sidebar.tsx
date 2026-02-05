@@ -13,7 +13,8 @@ import {
   CreditCard,
   Settings,
   LogOut,
-  X
+  X,
+  Bike
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useStore } from "@/lib/store"
@@ -22,6 +23,7 @@ import { useRouter } from "next/navigation"
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
   { icon: Users, label: "Manage Patients", href: "/admin/patients" },
+  { icon: Bike, label: "Manage Riders", href: "/admin/riders" },
   { icon: TestTube, label: "Manage Tests", href: "/admin/tests" },
   { icon: Calendar, label: "Appointments", href: "/admin/appointments" },
   { icon: FileText, label: "Reports", href: "/admin/reports" },

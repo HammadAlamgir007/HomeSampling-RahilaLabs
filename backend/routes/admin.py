@@ -1,7 +1,8 @@
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from werkzeug.security import check_password_hash
-from models import db, User, Appointment, Test
+from datetime import datetime
+from models import db, User, Appointment, Test, Rider
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -309,3 +310,341 @@ def upload_report(appointment_id):
             return jsonify({'message': 'File uploaded', 'path': filename}), 200
             
     return jsonify({'error': 'File type not allowed'}), 400
+
+# --- Rider Management ---
+
+@admin_bp.route('/riders', methods=['POST'])
+@jwt_required()
+def create_rider():
+    """Create new rider account"""
+    current_user_id = int(get_jwt_identity())
+    user = User.query.get(current_user_id)
+    if not user or user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    data = request.get_json()
+    
+    # Validate required fields
+    required_fields = ['name', 'email', 'phone', 'password']
+    for field in required_fields:
+        if field not in data:
+            return jsonify({'error': f'{field} is required'}), 400
+    
+    # Check if email already exists
+    existing_rider = Rider.query.filter_by(email=data['email']).first()
+    if existing_rider:
+        return jsonify({'error': 'Email already exists'}), 400
+    
+    from werkzeug.security import generate_password_hash
+    
+    new_rider = Rider(
+        name=data['name'],
+        email=data['email'],
+        phone=data['phone'],
+        password_hash=generate_password_hash(data['password']),
+        availability_status='available'
+    )
+    
+    db.session.add(new_rider)
+    db.session.commit()
+    
+    return jsonify({
+        'message': 'Rider created successfully',
+        'rider': new_rider.to_dict()
+    }), 201
+
+@admin_bp.route('/riders', methods=['GET'])
+@jwt_required()
+def get_riders():
+    """List all riders with their status"""
+    current_user_id = int(get_jwt_identity())
+    user = User.query.get(current_user_id)
+    if not user or user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    riders = Rider.query.all()
+    return jsonify({
+        'riders': [rider.to_dict(include_stats=True) for rider in riders]
+    }), 200
+
+@admin_bp.route('/riders/<int:rider_id>', methods=['GET'])
+@jwt_required()
+def get_rider(rider_id):
+    """Get specific rider details"""
+    current_user_id = int(get_jwt_identity())
+    user = User.query.get(current_user_id)
+    if not user or user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    rider = Rider.query.get(rider_id)
+    if not rider:
+        return jsonify({'error': 'Rider not found'}), 404
+    
+    return jsonify(rider.to_dict(include_stats=True)), 200
+
+@admin_bp.route('/riders/<int:rider_id>', methods=['PUT'])
+@jwt_required()
+def update_rider(rider_id):
+    """Update rider information"""
+    current_user_id = int(get_jwt_identity())
+    user = User.query.get(current_user_id)
+    if not user or user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    rider = Rider.query.get(rider_id)
+    if not rider:
+        return jsonify({'error': 'Rider not found'}), 404
+    
+    data = request.get_json()
+    
+    if 'name' in data:
+        rider.name = data['name']
+    if 'email' in data:
+        # Check if email is unique
+        existing = Rider.query.filter(Rider.email == data['email'], Rider.id != rider_id).first()
+        if existing:
+            return jsonify({'error': 'Email already exists'}), 400
+        rider.email = data['email']
+    if 'phone' in data:
+        rider.phone = data['phone']
+    if 'availability_status' in data:
+        if data['availability_status'] in ['available', 'busy', 'offline']:
+            rider.availability_status = data['availability_status']
+    
+    from werkzeug.security import generate_password_hash
+    if 'password' in data and data['password']:
+        rider.password_hash = generate_password_hash(data['password'])
+    
+    rider.updated_at = datetime.utcnow()
+    db.session.commit()
+    
+    return jsonify({
+        'message': 'Rider updated successfully',
+        'rider': rider.to_dict()
+    }), 200
+
+@admin_bp.route('/riders/<int:rider_id>', methods=['DELETE'])
+@jwt_required()
+def delete_rider(rider_id):
+    """Delete rider account"""
+    current_user_id = int(get_jwt_identity())
+    user = User.query.get(current_user_id)
+    if not user or user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    rider = Rider.query.get(rider_id)
+    if not rider:
+        return jsonify({'error': 'Rider not found'}), 404
+    
+    # Check if rider has active assignments
+    active_assignments = Appointment.query.filter(
+        Appointment.rider_id == rider_id,
+        Appointment.status.in_(['assigned_to_rider', 'rider_accepted', 'rider_on_way', 'sample_collected'])
+    ).count()
+    
+    if active_assignments > 0:
+        return jsonify({'error': 'Cannot delete rider with active assignments'}), 400
+    
+    db.session.delete(rider)
+    db.session.commit()
+    
+    return jsonify({'message': 'Rider deleted successfully'}), 200
+
+@admin_bp.route('/riders/<int:rider_id>/performance', methods=['GET'])
+@jwt_required()
+def get_rider_performance(rider_id):
+    """Get rider performance stats"""
+    current_user_id = int(get_jwt_identity())
+    user = User.query.get(current_user_id)
+    if not user or user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    rider = Rider.query.get(rider_id)
+    if not rider:
+        return jsonify({'error': 'Rider not found'}), 404
+    
+    # Calculate stats
+    total_assigned = Appointment.query.filter_by(rider_id=rider_id).count()
+    completed = Appointment.query.filter_by(rider_id=rider_id, status='delivered_to_lab').count()
+    rejected = Appointment.query.filter_by(rider_id=rider_id, status='rider_rejected').count()
+    in_progress = Appointment.query.filter(
+        Appointment.rider_id == rider_id,
+        Appointment.status.in_(['assigned_to_rider', 'rider_accepted', 'rider_on_way', 'sample_collected'])
+    ).count()
+    
+    # Calculate average completion time (from assignment to delivery)
+    completed_tasks = Appointment.query.filter_by(
+        rider_id=rider_id,
+        status='delivered_to_lab'
+    ).all()
+    
+    avg_completion_time = None
+    if completed_tasks:
+        total_time = sum([
+            (task.delivered_at - task.rider_assigned_at).total_seconds() / 3600
+            for task in completed_tasks
+            if task.delivered_at and task.rider_assigned_at
+        ])
+        avg_completion_time = total_time / len(completed_tasks) if len(completed_tasks) > 0 else 0
+    
+    return jsonify({
+        'rider': rider.to_dict(),
+        'performance': {
+            'total_assigned': total_assigned,
+            'completed': completed,
+            'rejected': rejected,
+            'in_progress': in_progress,
+            'success_rate': (completed / total_assigned * 100) if total_assigned > 0 else 0,
+            'avg_completion_time_hours': round(avg_completion_time, 2) if avg_completion_time else None
+        }
+    }), 200
+
+@admin_bp.route('/riders/<int:rider_id>/history', methods=['GET'])
+@jwt_required()
+def get_rider_history(rider_id):
+    """Get rider's task history"""
+    current_user_id = int(get_jwt_identity())
+    user = User.query.get(current_user_id)
+    if not user or user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    rider = Rider.query.get(rider_id)
+    if not rider:
+        return jsonify({'error': 'Rider not found'}), 404
+    
+    # Get all tasks for this rider
+    tasks = Appointment.query.filter_by(rider_id=rider_id).order_by(
+        Appointment.created_at.desc()
+    ).all()
+    
+    return jsonify({
+        'rider': rider.to_dict(),
+        'tasks': [task.to_dict(include_rider=False) for task in tasks]
+    }), 200
+
+@admin_bp.route('/appointments/<int:appointment_id>/assign-rider', methods=['POST'])
+@jwt_required()
+def assign_rider(appointment_id):
+    """Assign rider to appointment"""
+    current_user_id = int(get_jwt_identity())
+    user = User.query.get(current_user_id)
+    if not user or user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    data = request.get_json()
+    rider_id = data.get('rider_id')
+    
+    if not rider_id:
+        return jsonify({'error': 'rider_id is required'}), 400
+    
+    appointment = Appointment.query.get(appointment_id)
+    if not appointment:
+        return jsonify({'error': 'Appointment not found'}), 404
+    
+    rider = Rider.query.get(rider_id)
+    if not rider:
+        return jsonify({'error': 'Rider not found'}), 404
+    
+    # Check if rider is available
+    if rider.availability_status != 'available':
+        return jsonify({'error': 'Rider is not available'}), 400
+    
+    # Assign rider
+    appointment.rider_id = rider_id
+    appointment.status = 'assigned_to_rider'
+    appointment.rider_assigned_at = datetime.utcnow()
+    
+    # Notify rider
+    from utils.notifications import notify_rider_assignment, notify_patient_rider_assigned
+    notify_rider_assignment(rider_id, appointment_id, appointment.user.username, appointment.address)
+    notify_patient_rider_assigned(appointment.user_id, appointment_id, rider.name)
+    
+    db.session.commit()
+    
+    return jsonify({
+        'message': 'Rider assigned successfully',
+        'appointment': appointment.to_dict()
+    }), 200
+
+@admin_bp.route('/appointments/<int:appointment_id>/reassign-rider', methods=['PUT'])
+@jwt_required()
+def reassign_rider(appointment_id):
+    """Reassign appointment to different rider"""
+    current_user_id = int(get_jwt_identity())
+    user = User.query.get(current_user_id)
+    if not user or user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    data = request.get_json()
+    new_rider_id = data.get('rider_id')
+    
+    if not new_rider_id:
+        return jsonify({'error': 'rider_id is required'}), 400
+    
+    appointment = Appointment.query.get(appointment_id)
+    if not appointment:
+        return jsonify({'error': 'Appointment not found'}), 404
+    
+    new_rider = Rider.query.get(new_rider_id)
+    if not new_rider:
+        return jsonify({'error': 'Rider not found'}), 404
+    
+    # Check if new rider is available
+    if new_rider.availability_status != 'available':
+        return jsonify({'error': 'Rider is not available'}), 400
+    
+    # Update old rider availability if they were busy
+    if appointment.rider_id:
+        old_rider = Rider.query.get(appointment.rider_id)
+        if old_rider and old_rider.availability_status == 'busy':
+            old_rider.availability_status = 'available'
+    
+    # Reassign
+    appointment.rider_id = new_rider_id
+    appointment.status = 'assigned_to_rider'
+    appointment.rider_assigned_at = datetime.utcnow()
+    appointment.rider_accepted_at = None
+    
+    # Notify new rider
+    from utils.notifications import notify_rider_assignment
+    notify_rider_assignment(new_rider_id, appointment_id, appointment.user.username, appointment.address)
+    
+    db.session.commit()
+    
+    return jsonify({
+        'message': 'Rider reassigned successfully',
+        'appointment': appointment.to_dict()
+    }), 200
+
+@admin_bp.route('/appointments/<int:appointment_id>/rider-tracking', methods=['GET'])
+@jwt_required()
+def get_rider_tracking(appointment_id):
+    """Get real-time rider location for appointment"""
+    current_user_id = int(get_jwt_identity())
+    user = User.query.get(current_user_id)
+    if not user or user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    appointment = Appointment.query.get(appointment_id)
+    if not appointment:
+        return jsonify({'error': 'Appointment not found'}), 404
+    
+    if not appointment.rider:
+        return jsonify({'error': 'No rider assigned to this appointment'}), 404
+    
+    rider = appointment.rider
+    
+    return jsonify({
+        'appointment_id': appointment_id,
+        'rider': {
+            'id': rider.id,
+            'name': rider.name,
+            'phone': rider.phone,
+            'gps_latitude': rider.gps_latitude,
+            'gps_longitude': rider.gps_longitude,
+            'last_location_update': rider.last_location_update.isoformat() if rider.last_location_update else None,
+            'availability_status': rider.availability_status
+        },
+        'patient_address': appointment.address,
+        'status': appointment.status
+    }), 200

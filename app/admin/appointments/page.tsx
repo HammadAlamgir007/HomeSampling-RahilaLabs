@@ -12,6 +12,7 @@ import { Plus } from "lucide-react"
 export default function AppointmentsPage() {
   const { authToken } = useStore()
   const [appointments, setAppointments] = useState<any[]>([])
+  const [riders, setRiders] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   const fetchAppointments = async () => {
@@ -37,8 +38,25 @@ export default function AppointmentsPage() {
     }
   }
 
+  const fetchRiders = async () => {
+    if (!authToken) return
+    try {
+      const res = await fetch("http://localhost:5000/api/admin/riders", {
+        headers: { Authorization: `Bearer ${authToken}` }
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        setRiders(data.riders || [])
+      }
+    } catch (error) {
+      console.error("Failed to fetch riders")
+    }
+  }
+
   useEffect(() => {
     fetchAppointments()
+    fetchRiders()
   }, [authToken])
 
   const handleStatusUpdate = async (id: number, newStatus: string) => {
@@ -56,6 +74,35 @@ export default function AppointmentsPage() {
       }
     } catch (error) {
       console.error("Failed to update status")
+    }
+  }
+
+  const handleRiderAssignment = async (appointmentId: number, riderId: number) => {
+    try {
+      console.log('Assigning rider:', { appointmentId, riderId, authToken: authToken ? 'exists' : 'missing' })
+
+      const res = await fetch(`http://localhost:5000/api/admin/appointments/${appointmentId}/assign-rider`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`
+        },
+        body: JSON.stringify({ rider_id: riderId })
+      })
+
+      console.log('Response status:', res.status)
+
+      if (res.ok) {
+        fetchAppointments() // Refresh list
+        return { success: true, message: 'Rider assigned successfully!' }
+      } else {
+        const error = await res.json()
+        console.error('Assignment error:', error)
+        return { success: false, message: error.error || 'Failed to assign rider' }
+      }
+    } catch (error) {
+      console.error('Network error:', error)
+      return { success: false, message: `Network error: ${error instanceof Error ? error.message : 'Please try again.'}` }
     }
   }
 
@@ -86,7 +133,9 @@ export default function AppointmentsPage() {
                 {loading ? <p>Loading...</p> : (
                   <AppointmentsTable
                     appointments={appointments}
+                    riders={riders}
                     onStatusUpdate={handleStatusUpdate}
+                    onRiderAssignment={handleRiderAssignment}
                   />
                 )}
               </CardContent>
