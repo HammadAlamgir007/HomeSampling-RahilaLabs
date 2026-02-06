@@ -193,7 +193,7 @@ export default function BookTestPage() {
                             <p className="text-sm text-gray-600">{test.description}</p>
                             <div className="flex justify-between mt-2">
                               <span className="text-sm text-gray-600">{test.sampleType}</span>
-                              <span className="font-bold text-blue-600">₹{test.price}</span>
+                              <span className="font-bold text-blue-600">Rs. {test.price}</span>
                             </div>
                           </div>
                         </div>
@@ -366,7 +366,7 @@ export default function BookTestPage() {
                           .filter((t) => selectedTests.includes(t.id))
                           .map((t) => (
                             <li key={t.id}>
-                              • {t.name} - ₹{t.price}
+                              • {t.name} - Rs. {t.price}
                             </li>
                           ))}
                       </ul>
