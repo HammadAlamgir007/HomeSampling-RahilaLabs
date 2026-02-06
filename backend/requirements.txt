@@ -3,3 +3,6 @@ flask-cors
 flask-sqlalchemy
 flask-jwt-extended
 email_validator
+pyodbc
+python-dotenv
+gunicorn

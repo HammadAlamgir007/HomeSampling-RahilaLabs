@@ -122,7 +122,7 @@ export function AppointmentsTable({ appointments, riders = [], onView, onEdit, o
               </td>
               <td className="px-6 py-4">
                 <div className="flex gap-2 items-center">
-                  {apt.status === 'pending' && (
+                  {(apt.status === 'pending' || apt.status === 'confirmed') && (
                     <>
                       <div className="flex gap-2 items-center">
                         <select
@@ -155,6 +155,17 @@ export function AppointmentsTable({ appointments, riders = [], onView, onEdit, o
                           )}
                         </Button>
                       </div>
+
+                      {apt.status === 'pending' && (
+                        <button
+                          title="Approve Appointment"
+                          onClick={() => onStatusUpdate?.(apt.id, 'confirmed')}
+                          className="p-2 hover:bg-green-100 text-green-600 rounded"
+                        >
+                          <Check className="w-4 h-4" />
+                        </button>
+                      )}
+
                       <button
                         title="Decline Appointment"
                         onClick={() => onStatusUpdate?.(apt.id, 'cancelled')}
