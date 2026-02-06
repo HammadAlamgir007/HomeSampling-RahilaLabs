@@ -43,6 +43,14 @@ export default function PatientsPage() {
   const [patients, setPatients] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
+  const [isAddPatientOpen, setIsAddPatientOpen] = useState(false)
+  const [newPatient, setNewPatient] = useState({
+    username: '',
+    email: '',
+    password: '',
+    phone: '',
+    city: ''
+  })
   const [editingPatient, setEditingPatient] = useState<any>(null)
 
   useEffect(() => {
@@ -67,6 +75,37 @@ export default function PatientsPage() {
 
   const filteredPatients = searchItems(patients, searchTerm, ["username", "email"])
 
+  const handleAddPatient = async () => {
+    if (!newPatient.username || !newPatient.email || !newPatient.password || !newPatient.phone) {
+      alert("Please fill in all required fields")
+      return
+    }
+
+    try {
+      const res = await fetch("http://localhost:5000/api/admin/patients", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify(newPatient)
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        setPatients([...patients, data.user])
+        setIsAddPatientOpen(false)
+        setNewPatient({ username: '', email: '', password: '', phone: '', city: '' })
+      } else {
+        const err = await res.json()
+        alert("Failed to add patient: " + (err.error || "Unknown error"))
+      }
+    } catch (error) {
+      console.error("Failed to add patient")
+      alert("Failed to add patient")
+    }
+  }
+
   return (
     <div className="flex">
       <AdminSidebar />
@@ -79,7 +118,10 @@ export default function PatientsPage() {
                 <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Manage Patients</h1>
                 <p className="text-slate-600 dark:text-slate-400 mt-1">View and manage all patients</p>
               </div>
-              <Button className="bg-blue-900 hover:bg-blue-800 gap-2 w-full md:w-auto">
+              <Button
+                onClick={() => setIsAddPatientOpen(true)}
+                className="bg-blue-900 hover:bg-blue-800 gap-2 w-full md:w-auto"
+              >
                 <Plus className="w-4 h-4" />
                 Add Patient
               </Button>
@@ -154,6 +196,68 @@ export default function PatientsPage() {
           </div>
         </main>
       </div>
+
+      {/* Add Patient Modal */}
+      {isAddPatientOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl w-full max-w-md p-6">
+            <h2 className="text-xl font-bold mb-4 text-slate-900 dark:text-white">Add New Patient</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1 dark:text-slate-300">Name *</label>
+                <Input
+                  value={newPatient.username}
+                  onChange={(e) => setNewPatient({ ...newPatient, username: e.target.value })}
+                  placeholder="Full Name"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1 dark:text-slate-300">Email *</label>
+                <Input
+                  value={newPatient.email}
+                  onChange={(e) => setNewPatient({ ...newPatient, email: e.target.value })}
+                  placeholder="Email Address"
+                  type="email"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1 dark:text-slate-300">Password *</label>
+                <Input
+                  value={newPatient.password}
+                  onChange={(e) => setNewPatient({ ...newPatient, password: e.target.value })}
+                  placeholder="Password"
+                  type="password"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1 dark:text-slate-300">Phone *</label>
+                <Input
+                  value={newPatient.phone}
+                  onChange={(e) => setNewPatient({ ...newPatient, phone: e.target.value })}
+                  placeholder="Phone Number"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1 dark:text-slate-300">City</label>
+                <Input
+                  value={newPatient.city}
+                  onChange={(e) => setNewPatient({ ...newPatient, city: e.target.value })}
+                  placeholder="City"
+                />
+              </div>
+              <div className="flex justify-end gap-2 mt-6">
+                <Button variant="outline" onClick={() => setIsAddPatientOpen(false)}>Cancel</Button>
+                <Button
+                  className="bg-blue-900 hover:bg-blue-800"
+                  onClick={handleAddPatient}
+                >
+                  Add Patient
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Edit Patient Modal */}
       {editingPatient && (

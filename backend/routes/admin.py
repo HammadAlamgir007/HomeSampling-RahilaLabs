@@ -161,6 +161,42 @@ def get_patients():
     patients = User.query.filter_by(role='patient').all()
     return jsonify([p.to_dict() for p in patients]), 200
 
+@admin_bp.route('/patients', methods=['POST'])
+@jwt_required()
+def create_patient():
+    current_user_id = int(get_jwt_identity())
+    user = User.query.get(current_user_id)
+    if not user or user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    data = request.get_json()
+    
+    # Validation
+    required_fields = ['username', 'email', 'password', 'phone']
+    for field in required_fields:
+        if field not in data:
+            return jsonify({'error': f'{field} is required'}), 400
+
+    if User.query.filter_by(email=data['email']).first():
+        return jsonify({'error': 'Email already exists'}), 400
+        
+    from werkzeug.security import generate_password_hash
+    
+    new_patient = User(
+        username=data['username'],
+        email=data['email'],
+        password_hash=generate_password_hash(data['password']),
+        phone=data['phone'],
+        city=data.get('city', ''),
+        role='patient',
+        status='active'
+    )
+    
+    db.session.add(new_patient)
+    db.session.commit()
+    
+    return jsonify({'message': 'Patient created successfully', 'user': new_patient.to_dict()}), 201
+
 @admin_bp.route('/patients/<int:id>', methods=['PUT'])
 @jwt_required()
 def update_patient(id):
