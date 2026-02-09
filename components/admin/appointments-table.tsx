@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Eye, Check, Box, X, Upload, UserPlus } from "lucide-react"
 import { useStore } from "@/lib/store"
+import { API_BASE_URL } from "@/lib/api_config"
 
 interface AppointmentsTableProps {
   appointments: any[]
@@ -211,6 +212,10 @@ export function AppointmentsTable({ appointments, riders = [], onView, onEdit, o
                           // But here we are in a component. We need onUpload callback or handle it here if possible.
                           // Let's use an onUpload prop if available, or fetch directly.
                           // Given we are in NextJS client component, we access localStorage/store
+
+
+                          // ... existing code ...
+
                           // But store hook rule.
                           // Let's dispatch a custom event or use onStatusUpdate prop as proxy? No. 
                           // Let's assume we can pass an onUpload prop.
@@ -221,7 +226,7 @@ export function AppointmentsTable({ appointments, riders = [], onView, onEdit, o
                           if (!token) { alert("Auth token missing"); return; }
 
                           try {
-                            const res = await fetch(`http://localhost:5000/api/admin/upload-report/${apt.id}`, {
+                            const res = await fetch(`${API_BASE_URL}/api/admin/upload-report/${apt.id}`, {
                               method: 'POST',
                               headers: { 'Authorization': `Bearer ${token}` },
                               body: formData

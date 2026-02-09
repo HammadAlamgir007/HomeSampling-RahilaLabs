@@ -8,6 +8,7 @@ import { useState, useEffect } from "react"
 import { Upload, Download, Eye, Trash2 } from "lucide-react"
 
 import { useStore } from "@/lib/store"
+import { API_BASE_URL } from "@/lib/api_config"
 
 export default function ReportsPage() {
   const { authToken } = useStore()
@@ -18,7 +19,7 @@ export default function ReportsPage() {
     const fetchReports = async () => {
       if (!authToken) return
       try {
-        const res = await fetch("http://localhost:5000/api/admin/appointments", {
+        const res = await fetch(`${API_BASE_URL}/api/admin/appointments`, {
           headers: { Authorization: `Bearer ${authToken}` }
         })
         if (res.ok) {
@@ -88,7 +89,7 @@ export default function ReportsPage() {
                               <Eye className="w-4 h-4 text-slate-600 dark:text-slate-400" />
                             </button>
                             <a
-                              href={`http://localhost:5000/api/patient/reports/${report.report_path}`}
+                              href={`${API_BASE_URL}/api/patient/reports/${report.report_path}`}
                               target="_blank"
                               rel="noreferrer"
                               onClick={(e) => {
@@ -101,7 +102,8 @@ export default function ReportsPage() {
                                 // Since this is a simple anchor tag, we can't easily pass headers unless we fetch and blob.
                                 // Alternative: Use a download function.
                                 e.preventDefault();
-                                fetch(`http://localhost:5000/api/patient/reports/${report.report_path}`, {
+                                e.preventDefault();
+                                fetch(`${API_BASE_URL}/api/patient/reports/${report.report_path}`, {
                                   headers: { Authorization: `Bearer ${authToken}` }
                                 })
                                   .then(res => res.blob())

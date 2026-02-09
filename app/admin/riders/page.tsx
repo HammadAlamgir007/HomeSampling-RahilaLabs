@@ -9,6 +9,7 @@ import { Plus, MapPin, Phone, Mail, TrendingUp } from 'lucide-react'
 import Link from 'next/link'
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
 import { AdminNavbar } from "@/components/admin/admin-navbar"
+import { API_BASE_URL } from "@/lib/api_config"
 
 interface Rider {
     id: number
@@ -44,7 +45,7 @@ export default function RidersPage() {
                 return
             }
 
-            const response = await fetch('http://localhost:5000/api/admin/riders', {
+            const response = await fetch(`${API_BASE_URL}/api/admin/riders`, {
                 headers: {
                     'Authorization': `Bearer ${authToken}`
                 }

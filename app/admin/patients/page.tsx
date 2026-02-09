@@ -9,6 +9,7 @@ import { useState, useEffect } from "react"
 import { useStore } from "@/lib/store"
 import { searchItems } from "@/lib/search-utils"
 import { Plus, Search, Edit, Trash2, Eye } from "lucide-react"
+import { API_BASE_URL } from "@/lib/api_config"
 
 const mockPatients = [
   { id: "p1", name: "Ali Ahmed", email: "ali@example.com", phone: "03001234567", city: "Karachi", status: "active" },
@@ -57,7 +58,7 @@ export default function PatientsPage() {
     const fetchPatients = async () => {
       if (!authToken) return
       try {
-        const res = await fetch("http://localhost:5000/api/admin/patients", {
+        const res = await fetch(`${API_BASE_URL}/api/admin/patients`, {
           headers: { Authorization: `Bearer ${authToken}` }
         })
         if (res.ok) {
@@ -82,7 +83,7 @@ export default function PatientsPage() {
     }
 
     try {
-      const res = await fetch("http://localhost:5000/api/admin/patients", {
+      const res = await fetch(`${API_BASE_URL}/api/admin/patients`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -299,7 +300,7 @@ export default function PatientsPage() {
                   className="bg-blue-900 hover:bg-blue-800"
                   onClick={async () => {
                     try {
-                      const res = await fetch(`http://localhost:5000/api/admin/patients/${editingPatient.id}`, {
+                      const res = await fetch(`${API_BASE_URL}/api/admin/patients/${editingPatient.id}`, {
                         method: 'PUT',
                         headers: {
                           'Content-Type': 'application/json',

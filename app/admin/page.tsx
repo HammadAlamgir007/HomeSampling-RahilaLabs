@@ -2,6 +2,7 @@
 
 import { useStore } from "@/lib/store"
 import { useEffect, useState } from "react"
+import { API_BASE_URL } from "@/lib/api_config"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
 import { AdminNavbar } from "@/components/admin/admin-navbar"
 import { StatCardAdmin } from "@/components/admin/stat-card-admin"
@@ -38,7 +39,7 @@ export default function AdminDashboard() {
 
       try {
         // Fetch Stats
-        const statsRes = await fetch("http://localhost:5000/api/admin/stats", {
+        const statsRes = await fetch(`${API_BASE_URL}/api/admin/stats`, {
           headers: { Authorization: `Bearer ${authToken}` }
         })
 
@@ -53,7 +54,7 @@ export default function AdminDashboard() {
         }
 
         // Fetch Recent Activity
-        const activityRes = await fetch("http://localhost:5000/api/admin/activity", {
+        const activityRes = await fetch(`${API_BASE_URL}/api/admin/activity`, {
           headers: { Authorization: `Bearer ${authToken}` }
         })
         if (activityRes.ok) {
@@ -61,7 +62,7 @@ export default function AdminDashboard() {
         }
 
         // Fetch Recent Appointments
-        const appointmentsRes = await fetch("http://localhost:5000/api/admin/appointments", {
+        const appointmentsRes = await fetch(`${API_BASE_URL}/api/admin/appointments`, {
           headers: { Authorization: `Bearer ${authToken}` }
         })
         if (appointmentsRes.ok) {

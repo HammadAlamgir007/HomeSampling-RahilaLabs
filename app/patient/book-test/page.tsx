@@ -8,6 +8,7 @@ import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import BookingStepper from "@/components/booking-stepper"
 import { TIME_SLOTS, STATES } from "@/lib/constants"
+import { API_BASE_URL } from "@/lib/api_config"
 
 export default function BookTestPage() {
   const router = useRouter()
@@ -20,7 +21,7 @@ export default function BookTestPage() {
   useEffect(() => {
     const fetchTests = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/patient/tests')
+        const res = await fetch(`${API_BASE_URL}/api/patient/tests`)
         if (res.ok) {
           const data = await res.json()
           setTests(data)
@@ -126,7 +127,7 @@ export default function BookTestPage() {
     try {
       // Create bookings sequentially
       for (const testId of selectedTests) {
-        const response = await fetch("http://localhost:5000/api/patient/book", {
+        const response = await fetch(`${API_BASE_URL}/api/patient/book`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

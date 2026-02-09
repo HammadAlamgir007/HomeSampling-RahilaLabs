@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
+import { API_BASE_URL } from "@/lib/api_config"
 
 export default function CreateRiderPage() {
     const router = useRouter()
@@ -28,7 +29,7 @@ export default function CreateRiderPage() {
         setError('')
 
         try {
-            const response = await fetch('http://localhost:5000/api/admin/riders', {
+            const response = await fetch(`${API_BASE_URL}/api/admin/riders`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

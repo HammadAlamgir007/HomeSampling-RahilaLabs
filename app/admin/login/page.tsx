@@ -6,6 +6,7 @@ import { useStore } from "@/lib/store"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Lock, ShieldCheck } from "lucide-react"
+import { API_BASE_URL } from "@/lib/api_config"
 
 export default function AdminLoginPage() {
     const router = useRouter()
@@ -24,7 +25,7 @@ export default function AdminLoginPage() {
         setLoading(true)
 
         try {
-            const res = await fetch("http://localhost:5000/api/admin/login", {
+            const res = await fetch(`${API_BASE_URL}/api/admin/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ username, password }),

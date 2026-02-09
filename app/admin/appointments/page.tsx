@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { useStore } from "@/lib/store"
 import { AppointmentsTable } from "@/components/admin/appointments-table"
 import { Plus } from "lucide-react"
+import { API_BASE_URL } from "@/lib/api_config"
 
 export default function AppointmentsPage() {
   const { authToken } = useStore()
@@ -18,7 +19,7 @@ export default function AppointmentsPage() {
   const fetchAppointments = async () => {
     if (!authToken) return
     try {
-      const res = await fetch("http://localhost:5000/api/admin/appointments", {
+      const res = await fetch(`${API_BASE_URL}/api/admin/appointments`, {
         headers: { Authorization: `Bearer ${authToken}` }
       })
 
@@ -41,7 +42,7 @@ export default function AppointmentsPage() {
   const fetchRiders = async () => {
     if (!authToken) return
     try {
-      const res = await fetch("http://localhost:5000/api/admin/riders", {
+      const res = await fetch(`${API_BASE_URL}/api/admin/riders`, {
         headers: { Authorization: `Bearer ${authToken}` }
       })
 
@@ -61,7 +62,7 @@ export default function AppointmentsPage() {
 
   const handleStatusUpdate = async (id: number, newStatus: string) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/admin/appointments/${id}/status`, {
+      const res = await fetch(`${API_BASE_URL}/api/admin/appointments/${id}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -81,7 +82,7 @@ export default function AppointmentsPage() {
     try {
       console.log('Assigning rider:', { appointmentId, riderId, authToken: authToken ? 'exists' : 'missing' })
 
-      const res = await fetch(`http://localhost:5000/api/admin/appointments/${appointmentId}/assign-rider`, {
+      const res = await fetch(`${API_BASE_URL}/api/admin/appointments/${appointmentId}/assign-rider`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -6,6 +6,7 @@ import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import Link from "next/link"
 import { STATUS_COLORS } from "@/lib/constants"
+import { API_BASE_URL } from "@/lib/api_config"
 
 export default function DashboardPage() {
   const user = useStore((state) => state.user)
@@ -18,7 +19,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (authToken) {
-      fetch('http://localhost:5000/api/patient/bookings', {
+      fetch(`${API_BASE_URL}/api/patient/bookings`, {
         headers: {
           'Authorization': `Bearer ${authToken}`
         }
@@ -53,7 +54,7 @@ export default function DashboardPage() {
     if (!confirm("Are you sure you want to cancel this appointment?")) return;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/patient/bookings/${bookingId}`, {
+      const res = await fetch(`${API_BASE_URL}/api/patient/bookings/${bookingId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${authToken}`
@@ -188,12 +189,12 @@ export default function DashboardPage() {
                       </div>
                       <div>
                         <a
-                          href={`http://localhost:5000/api/patient/reports/${booking.report_path || `report_${booking.id}_file.pdf`}`}
+                          href={`${API_BASE_URL}/api/patient/reports/${booking.report_path || `report_${booking.id}_file.pdf`}`}
                           className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm font-medium inline-block"
                           onClick={(e) => {
                             e.preventDefault();
                             if (!booking.report_path) { alert("Report generating..."); return; }
-                            fetch(`http://localhost:5000/api/patient/reports/${booking.report_path}`, {
+                            fetch(`${API_BASE_URL}/api/patient/reports/${booking.report_path}`, {
                               headers: { Authorization: `Bearer ${authToken}` }
                             })
                               .then(res => {

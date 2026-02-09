@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useStore } from "@/lib/store"
 import { Plus, Edit, Trash2 } from "lucide-react"
+import { API_BASE_URL } from "@/lib/api_config"
 
 export default function TestsPage() {
   const { authToken } = useStore()
@@ -16,7 +17,7 @@ export default function TestsPage() {
   const fetchTests = async () => {
     if (!authToken) return
     try {
-      const res = await fetch("http://localhost:5000/api/admin/tests", {
+      const res = await fetch(`${API_BASE_URL}/api/admin/tests`, {
         headers: { Authorization: `Bearer ${authToken}` }
       })
       if (res.ok) {
@@ -43,7 +44,7 @@ export default function TestsPage() {
     if (!confirm("Are you sure you want to delete this test?")) return
 
     try {
-      const res = await fetch(`http://localhost:5000/api/admin/tests/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/admin/tests/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${authToken}` }
       })
@@ -61,7 +62,7 @@ export default function TestsPage() {
     if (!name || !price) return
 
     try {
-      const res = await fetch("http://localhost:5000/api/admin/tests", {
+      const res = await fetch(`${API_BASE_URL}/api/admin/tests`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

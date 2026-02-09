@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { ArrowLeft, MapPin, Phone, Mail, TrendingUp, Clock, CheckCircle, XCircle } from 'lucide-react'
 import Link from 'next/link'
+import { API_BASE_URL } from "@/lib/api_config"
 
 interface RiderPerformance {
     rider: {
@@ -45,7 +46,7 @@ export default function RiderDetailPage() {
 
     const fetchRiderPerformance = async () => {
         try {
-            const response = await fetch(`http://localhost:5000/api/admin/riders/${riderId}/performance`, {
+            const response = await fetch(`${API_BASE_URL}/api/admin/riders/${riderId}/performance`, {
                 headers: {
                     'Authorization': `Bearer ${authToken}`
                 }
@@ -69,7 +70,7 @@ export default function RiderDetailPage() {
         }
 
         try {
-            const response = await fetch(`http://localhost:5000/api/admin/riders/${riderId}`, {
+            const response = await fetch(`${API_BASE_URL}/api/admin/riders/${riderId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${authToken}`
