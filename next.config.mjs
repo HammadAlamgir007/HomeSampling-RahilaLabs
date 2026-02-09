@@ -1,4 +1,5 @@
 /** @type {import('next').NextConfig} */
+// Force fresh deployment - no standalone mode
 const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
