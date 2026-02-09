@@ -44,6 +44,8 @@ export default function PatientsPage() {
   const [patients, setPatients] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
   const [isAddPatientOpen, setIsAddPatientOpen] = useState(false)
   const [newPatient, setNewPatient] = useState({
     username: '',
@@ -57,13 +59,15 @@ export default function PatientsPage() {
   useEffect(() => {
     const fetchPatients = async () => {
       if (!authToken) return
+      setLoading(true)
       try {
-        const res = await fetch(`${API_BASE_URL}/api/admin/patients`, {
+        const res = await fetch(`${API_BASE_URL}/api/admin/patients?page=${page}&limit=10`, {
           headers: { Authorization: `Bearer ${authToken}` }
         })
         if (res.ok) {
           const data = await res.json()
-          setPatients(data)
+          setPatients(data.users || [])
+          setTotalPages(data.pages || 1)
         }
       } catch (error) {
         console.error("Failed to fetch patients")
@@ -72,7 +76,7 @@ export default function PatientsPage() {
       }
     }
     fetchPatients()
-  }, [authToken])
+  }, [authToken, page])
 
   const filteredPatients = searchItems(patients, searchTerm, ["username", "email"])
 
@@ -154,7 +158,9 @@ export default function PatientsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredPatients.map((patient) => (
+                      {loading ? (
+                        <tr><td colSpan={6} className="text-center py-4">Loading...</td></tr>
+                      ) : filteredPatients.map((patient) => (
                         <tr
                           key={patient.id}
                           className="border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
@@ -191,6 +197,25 @@ export default function PatientsPage() {
                       ))}
                     </tbody>
                   </table>
+                  <div className="flex items-center justify-between mt-4">
+                    <Button
+                      variant="outline"
+                      disabled={page <= 1}
+                      onClick={() => setPage(p => Math.max(1, p - 1))}
+                    >
+                      Previous
+                    </Button>
+                    <span className="text-sm text-slate-600 dark:text-slate-400">
+                      Page {page} of {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      disabled={page >= totalPages}
+                      onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    >
+                      Next
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>

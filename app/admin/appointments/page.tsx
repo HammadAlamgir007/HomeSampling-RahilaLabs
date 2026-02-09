@@ -15,11 +15,14 @@ export default function AppointmentsPage() {
   const [appointments, setAppointments] = useState<any[]>([])
   const [riders, setRiders] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
 
   const fetchAppointments = async () => {
     if (!authToken) return
+    setLoading(true)
     try {
-      const res = await fetch(`${API_BASE_URL}/api/admin/appointments`, {
+      const res = await fetch(`${API_BASE_URL}/api/admin/appointments?page=${page}&limit=10`, {
         headers: { Authorization: `Bearer ${authToken}` }
       })
 
@@ -30,7 +33,9 @@ export default function AppointmentsPage() {
 
       if (res.ok) {
         const data = await res.json()
-        setAppointments(data)
+        console.log("Admin Appointments Response:", data)
+        setAppointments(Array.isArray(data.appointments) ? data.appointments : [])
+        setTotalPages(data.pages || 1)
       }
     } catch (error) {
       console.error("Failed to fetch appointments")
@@ -58,7 +63,7 @@ export default function AppointmentsPage() {
   useEffect(() => {
     fetchAppointments()
     fetchRiders()
-  }, [authToken])
+  }, [authToken, page])
 
   const handleStatusUpdate = async (id: number, newStatus: string) => {
     try {
@@ -132,12 +137,33 @@ export default function AppointmentsPage() {
               </CardHeader>
               <CardContent>
                 {loading ? <p>Loading...</p> : (
-                  <AppointmentsTable
-                    appointments={appointments}
-                    riders={riders}
-                    onStatusUpdate={handleStatusUpdate}
-                    onRiderAssignment={handleRiderAssignment}
-                  />
+                  <>
+                    <AppointmentsTable
+                      appointments={appointments}
+                      riders={riders}
+                      onStatusUpdate={handleStatusUpdate}
+                      onRiderAssignment={handleRiderAssignment}
+                    />
+                    <div className="flex items-center justify-between mt-4">
+                      <Button
+                        variant="outline"
+                        disabled={page <= 1}
+                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                      >
+                        Previous
+                      </Button>
+                      <span className="text-sm text-slate-600 dark:text-slate-400">
+                        Page {page} of {totalPages}
+                      </span>
+                      <Button
+                        variant="outline"
+                        disabled={page >= totalPages}
+                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </>
                 )}
               </CardContent>
             </Card>

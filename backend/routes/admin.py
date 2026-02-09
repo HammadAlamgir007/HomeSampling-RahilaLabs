@@ -120,11 +120,21 @@ def get_appointments():
         return jsonify({'error': 'Unauthorized'}), 403
 
     try:
-        appointments = Appointment.query.order_by(Appointment.appointment_date.desc()).all()
-        print(f"Admin: Found {len(appointments)} appointments")
-        serialized = [appt.to_dict() for appt in appointments]
-        print(f"Admin: Serialized data: {serialized}")
-        return jsonify(serialized), 200
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('limit', 10, type=int)
+
+        pagination = Appointment.query.order_by(Appointment.appointment_date.desc()).paginate(
+            page=page, per_page=per_page, error_out=False
+        )
+        
+        appointments = pagination.items
+        
+        return jsonify({
+            'appointments': [appt.to_dict() for appt in appointments],
+            'total': pagination.total,
+            'pages': pagination.pages,
+            'current_page': page
+        }), 200
     except Exception as e:
         print(f"Admin: Error fetching appointments: {e}")
         return jsonify({'error': str(e)}), 500
@@ -162,8 +172,19 @@ def get_patients():
     if not user or user.role != 'admin':
         return jsonify({'error': 'Unauthorized'}), 403
 
-    patients = User.query.filter_by(role='patient').all()
-    return jsonify([p.to_dict() for p in patients]), 200
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('limit', 10, type=int)
+
+    pagination = User.query.filter_by(role='patient').order_by(User.id.desc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+    
+    return jsonify({
+        'users': [p.to_dict() for p in pagination.items],
+        'total': pagination.total,
+        'pages': pagination.pages,
+        'current_page': page
+    }), 200
 
 @admin_bp.route('/patients', methods=['POST'])
 @jwt_required()

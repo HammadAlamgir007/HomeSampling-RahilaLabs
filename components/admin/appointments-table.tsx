@@ -18,7 +18,8 @@ interface AppointmentsTableProps {
   onRiderAssignment?: (appointmentId: number, riderId: number) => Promise<{ success: boolean; message: string }>
 }
 
-export function AppointmentsTable({ appointments, riders = [], onView, onEdit, onDelete, onStatusUpdate, onRiderAssignment }: AppointmentsTableProps) {
+export function AppointmentsTable({ appointments = [], riders = [], onView, onEdit, onDelete, onStatusUpdate, onRiderAssignment }: AppointmentsTableProps) {
+  const safeAppointments = Array.isArray(appointments) ? appointments : [];
   const { authToken } = useStore()
   const [selectedRiders, setSelectedRiders] = useState<{ [key: number]: number }>({})
   const [assigningRider, setAssigningRider] = useState<number | null>(null)
@@ -89,7 +90,11 @@ export function AppointmentsTable({ appointments, riders = [], onView, onEdit, o
           </tr>
         </thead>
         <tbody>
-          {appointments.map((apt) => (
+          {safeAppointments.length === 0 ? (
+            <tr>
+              <td colSpan={6} className="text-center py-4 text-slate-500">No appointments found.</td>
+            </tr>
+          ) : safeAppointments.map((apt) => (
             <tr
               key={apt.id}
               className="border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900"
