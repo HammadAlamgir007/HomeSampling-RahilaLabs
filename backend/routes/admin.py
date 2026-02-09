@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
 from werkzeug.security import check_password_hash
 from datetime import datetime
 from models import db, User, Appointment, Test, Rider
@@ -15,7 +15,7 @@ def login():
     user = User.query.filter_by(username=username).first()
 
     if user and check_password_hash(user.password_hash, password) and user.role == 'admin':
-        access_token = create_access_token(identity=str(user.id))
+        access_token = create_access_token(identity=str(user.id), additional_claims={'type': 'user'})
         return jsonify({
             'message': 'Admin login successful',
             'token': access_token,
@@ -28,6 +28,10 @@ def login():
 @jwt_required()
 def get_dashboard_stats():
     # Verify admin role
+    claims = get_jwt()
+    if claims.get('type') != 'user':
+        return jsonify({'error': 'Unauthorized access'}), 403
+        
     current_user_id = int(get_jwt_identity())
     user = User.query.get(current_user_id)
     if not user or user.role != 'admin':

@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
 from werkzeug.security import check_password_hash
 from models import db, Rider, Appointment
 from datetime import datetime
@@ -31,7 +31,7 @@ def rider_login():
         return jsonify({'msg': 'Invalid credentials'}), 401
     
     # Create access token with rider ID as string (Flask-JWT-Extended requires string identity)
-    access_token = create_access_token(identity=str(rider.id))
+    access_token = create_access_token(identity=str(rider.id), additional_claims={'type': 'rider'})
     
     return jsonify({
         'access_token': access_token,
@@ -42,6 +42,10 @@ def rider_login():
 @jwt_required()
 def get_profile():
     """Get rider profile with stats"""
+    claims = get_jwt()
+    if claims.get('type') != 'rider':
+        return jsonify({'msg': 'Unauthorized'}), 403
+
     rider_id = int(get_jwt_identity())
     
     rider = Rider.query.get(rider_id)
@@ -55,6 +59,10 @@ def get_profile():
 @jwt_required()
 def update_profile():
     """Update rider profile (location, status, photo)"""
+    claims = get_jwt()
+    if claims.get('type') != 'rider':
+        return jsonify({'msg': 'Unauthorized'}), 403
+
     rider_id = int(get_jwt_identity())
     
     rider = Rider.query.get(rider_id)
@@ -102,6 +110,10 @@ def update_profile():
 @jwt_required()
 def get_tasks():
     """Get assigned tasks (pending acceptance or in-progress)"""
+    claims = get_jwt()
+    if claims.get('type') != 'rider':
+        return jsonify({'msg': 'Unauthorized'}), 403
+
     rider_id = int(get_jwt_identity())
     
     # Get tasks that are assigned, accepted, on way, or sample collected
@@ -118,6 +130,10 @@ def get_tasks():
 @jwt_required()
 def get_task_history():
     """Get completed task history"""
+    claims = get_jwt()
+    if claims.get('type') != 'rider':
+        return jsonify({'msg': 'Unauthorized'}), 403
+
     rider_id = int(get_jwt_identity())
     
     # Get completed or rejected tasks
@@ -134,6 +150,10 @@ def get_task_history():
 @jwt_required()
 def accept_task(task_id):
     """Accept assigned task"""
+    claims = get_jwt()
+    if claims.get('type') != 'rider':
+        return jsonify({'msg': 'Unauthorized'}), 403
+
     rider_id = int(get_jwt_identity())
     appointment = Appointment.query.get(task_id)
     
@@ -165,6 +185,10 @@ def accept_task(task_id):
 @jwt_required()
 def reject_task(task_id):
     """Reject assigned task with reason"""
+    claims = get_jwt()
+    if claims.get('type') != 'rider':
+        return jsonify({'msg': 'Unauthorized'}), 403
+
     rider_id = int(get_jwt_identity())
     data = request.get_json()
     reason = data.get('reason', 'No reason provided')
@@ -201,6 +225,10 @@ def reject_task(task_id):
 @jwt_required()
 def mark_on_way(task_id):
     """Mark rider is on the way"""
+    claims = get_jwt()
+    if claims.get('type') != 'rider':
+        return jsonify({'msg': 'Unauthorized'}), 403
+
     rider_id = int(get_jwt_identity())
     appointment = Appointment.query.get(task_id)
     
@@ -231,6 +259,10 @@ def mark_on_way(task_id):
 @jwt_required()
 def collect_sample(task_id):
     """Mark sample collected (with photo upload and notes)"""
+    claims = get_jwt()
+    if claims.get('type') != 'rider':
+        return jsonify({'msg': 'Unauthorized'}), 403
+
     rider_id = int(get_jwt_identity())
     appointment = Appointment.query.get(task_id)
     
@@ -284,6 +316,10 @@ def collect_sample(task_id):
 @jwt_required()
 def deliver_to_lab(task_id):
     """Mark sample delivered to lab"""
+    claims = get_jwt()
+    if claims.get('type') != 'rider':
+        return jsonify({'msg': 'Unauthorized'}), 403
+
     rider_id = int(get_jwt_identity())
     appointment = Appointment.query.get(task_id)
     
@@ -318,6 +354,10 @@ def deliver_to_lab(task_id):
 @jwt_required()
 def get_notifications():
     """Get rider notifications"""
+    claims = get_jwt()
+    if claims.get('type') != 'rider':
+        return jsonify({'msg': 'Unauthorized'}), 403
+
     rider_id = int(get_jwt_identity())
     unread_only = request.args.get('unread_only', 'false').lower() == 'true'
     
@@ -331,6 +371,10 @@ def get_notifications():
 @jwt_required()
 def mark_notification_as_read(notification_id):
     """Mark notification as read"""
+    claims = get_jwt()
+    if claims.get('type') != 'rider':
+        return jsonify({'msg': 'Unauthorized'}), 403
+        
     # No need to get rider_id for this endpoint, just mark as read
     success = mark_notification_read(notification_id)
     
@@ -338,3 +382,4 @@ def mark_notification_as_read(notification_id):
         return jsonify({'msg': 'Notification marked as read'}), 200
     else:
         return jsonify({'msg': 'Notification not found'}), 404
+
