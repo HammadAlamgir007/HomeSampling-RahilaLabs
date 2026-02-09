@@ -28,15 +28,17 @@ jobs:
           npm install
           npm run build
 
+      - name: Prepare deployment package
+        run: |
+          cp -r .next/standalone/. ./deploy/
+          cp -r .next/static ./deploy/.next/static
+          cp -r public ./deploy/public
+
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: |
-            .next/standalone
-            .next/static
-            public
-            package.json
+          path: ./deploy
 
   deploy:
     runs-on: ubuntu-latest
