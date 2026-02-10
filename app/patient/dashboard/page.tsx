@@ -40,7 +40,8 @@ export default function DashboardPage() {
               status: b.status,
               scheduledDate: new Date(b.date).toLocaleString(),
               address: b.address,
-              report_path: b.report_path
+              report_path: b.report_path,
+              rider: b.rider // Include rider information
             }))
             setLocalBookings(formatted)
           }
@@ -168,6 +169,16 @@ export default function DashboardPage() {
                         </div>
                       </div>
                       <p className="text-sm text-gray-600 dark:text-slate-400">Address: {booking.address}</p>
+                      {booking.rider && (
+                        <div className="mt-2 pt-2 border-t border-gray-200 dark:border-slate-700">
+                          <p className="text-sm text-gray-700 dark:text-slate-300">
+                            <span className="font-semibold">Rider Assigned:</span> {booking.rider.name}
+                          </p>
+                          <p className="text-sm text-gray-600 dark:text-slate-400">
+                            Phone: {booking.rider.phone}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
