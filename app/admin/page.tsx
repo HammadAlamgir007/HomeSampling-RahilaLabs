@@ -9,17 +9,7 @@ import { StatCardAdmin } from "@/components/admin/stat-card-admin"
 import { AppointmentsTable } from "@/components/admin/appointments-table"
 import { Users, TestTube, FileText, Calendar } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-
-const monthlyData = [
-  { month: "Jan", patients: 400, tests: 240 },
-  { month: "Feb", patients: 300, tests: 221 },
-  { month: "Mar", patients: 200, tests: 229 },
-  { month: "Apr", patients: 278, tests: 200 },
-  { month: "May", patients: 189, tests: 220 },
-  { month: "Jun", patients: 239, tests: 250 },
-]
 
 export default function AdminDashboard() {
   const { authToken } = useStore()
@@ -123,34 +113,6 @@ export default function AdminDashboard() {
                 changeType="positive"
               />
             </div>
-
-            {/* Charts */}
-            <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-              <CardHeader>
-                <CardTitle>Monthly Activity</CardTitle>
-                <CardDescription>Patients and tests over time</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={monthlyData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="month" stroke="#64748b" />
-                    <YAxis stroke="#64748b" />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "#1e293b",
-                        border: "1px solid #475569",
-                        borderRadius: "8px",
-                      }}
-                      labelStyle={{ color: "#fff" }}
-                    />
-                    <Legend />
-                    <Line type="monotone" dataKey="patients" stroke="#1e3a8a" name="Patients" />
-                    <Line type="monotone" dataKey="tests" stroke="#dc2626" name="Tests" />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
 
             {/* Appointments Table */}
             <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">

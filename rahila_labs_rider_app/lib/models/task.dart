@@ -42,7 +42,7 @@ class Task {
       id: json['id'],
       userId: json['user_id'],
       testId: json['test_id'],
-      appointmentDate: json['appointment_date'],
+      appointmentDate: json['date'], // Backend returns 'date', not 'appointment_date'
       status: json['status'],
       address: json['address'],
       patientName: json['patient_name'],

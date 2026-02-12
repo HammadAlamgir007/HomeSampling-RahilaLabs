@@ -27,7 +27,6 @@ const menuItems = [
   { icon: TestTube, label: "Manage Tests", href: "/admin/tests" },
   { icon: Calendar, label: "Appointments", href: "/admin/appointments" },
   { icon: FileText, label: "Reports", href: "/admin/reports" },
-  { icon: CreditCard, label: "Payments", href: "/admin/payments" },
   { icon: Settings, label: "Settings", href: "/admin/settings" },
 ]
 

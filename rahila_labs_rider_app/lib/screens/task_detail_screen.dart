@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '../providers/rider_provider.dart';
 import '../models/task.dart';
 
@@ -17,7 +17,7 @@ class TaskDetailScreen extends StatefulWidget {
 
 class _TaskDetailScreenState extends State<TaskDetailScreen> {
   final _notesController = TextEditingController();
-  File? _selectedImage;
+  XFile? _selectedImage;
   final ImagePicker _picker = ImagePicker();
 
   @override
@@ -27,11 +27,31 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   }
 
   Future<void> _pickImage() async {
-    final XFile? image = await _picker.pickImage(source: ImageSource.camera);
-    if (image != null) {
-      setState(() {
-        _selectedImage = File(image.path);
-      });
+    try {
+      // On web, camera doesn't work well, so use gallery
+      // On mobile, use camera
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery, // Changed from camera to gallery for web compatibility
+      );
+      
+      if (image != null) {
+        setState(() {
+          _selectedImage = image;
+        });
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Photo selected successfully')),
+          );
+        }
+      }
+    } catch (e) {
+      print('Error picking image: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error selecting photo: $e')),
+        );
+      }
     }
   }
 
@@ -241,11 +261,23 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                       
                       // Photo
                       if (_selectedImage != null)
-                        Image.file(
-                          _selectedImage!,
+                        Image.network(
+                          _selectedImage!.path,
                           height: 200,
                           width: double.infinity,
                           fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              height: 200,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[300],
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Center(
+                                child: Text('Error loading image'),
+                              ),
+                            );
+                          },
                         )
                       else
                         Container(
@@ -261,8 +293,8 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                       const SizedBox(height: 12),
                       ElevatedButton.icon(
                         onPressed: _pickImage,
-                        icon: const Icon(Icons.camera_alt),
-                        label: const Text('Take Photo'),
+                        icon: const Icon(Icons.photo_library),
+                        label: const Text('Select Photo'),
                         style: ElevatedButton.styleFrom(
                           minimumSize: const Size(double.infinity, 48),
                         ),

@@ -96,11 +96,16 @@ class ApiService {
       },
     );
 
+    print('GET /rider/tasks - Status: ${response.statusCode}');
+    print('Response body: ${response.body}');
+
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
+      print('Decoded data: $data');
       final tasks = (data['tasks'] as List)
           .map((task) => Task.fromJson(task))
           .toList();
+      print('Parsed ${tasks.length} tasks');
       return tasks;
     } else {
       throw Exception('Failed to load tasks');
