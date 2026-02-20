@@ -24,8 +24,10 @@ export default function RegisterPage() {
     confirmPassword: "",
   })
   const [error, setError] = useState("")
+  const [phoneError, setPhoneError] = useState("")
+  const [emailError, setEmailError] = useState("")
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
   }
 
@@ -40,6 +42,17 @@ export default function RegisterPage() {
       return
     }
 
+    // Strict email validation
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+    const validTLDs = ['com', 'net', 'org', 'edu', 'pk', 'co.uk', 'io', 'gov', 'info', 'biz', 'co.in']
+    const emailDomain = formData.email.split('@')[1] || ''
+    const hasValidTLD = validTLDs.some(tld => emailDomain.endsWith('.' + tld))
+    if (!emailRegex.test(formData.email) || !hasValidTLD) {
+      setEmailError("Please enter a valid email (e.g. name@gmail.com)")
+      return
+    }
+    setEmailError("")
+
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match")
       return
@@ -50,10 +63,22 @@ export default function RegisterPage() {
       return
     }
 
+    // Validate Pakistani phone number
+    const phone = formData.phone
+    const isMobile = /^03\d{9}$/.test(phone)  // 03XX-XXXXXXX (11 digits)
+    const isLandline = /^0[2-9]\d{8,9}$/.test(phone) // 0XX-XXXXXXXX (10-11 digits)
+    if (!isMobile && !isLandline) {
+      setPhoneError("Enter a valid Pakistani mobile (03XXXXXXXXX) or landline number")
+      return
+    }
+    setPhoneError("")
+
     // Mock registration
     try {
-      console.log("Sending request to backend...")
-      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+      const url = `${API_BASE_URL}/api/auth/register`
+      console.log("Sending request to:", url)
+      console.log("API_BASE_URL:", API_BASE_URL)
+      const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -114,10 +139,14 @@ export default function RegisterPage() {
                   type="email"
                   name="email"
                   value={formData.email}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  onChange={(e) => {
+                    setFormData({ ...formData, email: e.target.value })
+                    if (emailError) setEmailError("")
+                  }}
+                  className={`w-full px-4 py-2 border ${emailError ? 'border-red-400' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none`}
                   placeholder="you@example.com"
                 />
+                {emailError && <p className="text-red-500 text-xs mt-1">{emailError}</p>}
               </div>
 
               <div>
@@ -125,23 +154,35 @@ export default function RegisterPage() {
                 <input
                   type="tel"
                   name="phone"
+                  inputMode="numeric"
+                  maxLength={11}
                   value={formData.phone}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  placeholder="9876543210"
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '')
+                    setFormData({ ...formData, phone: val })
+                    if (phoneError) setPhoneError("")
+                  }}
+                  className={`w-full px-4 py-2 border ${phoneError ? 'border-red-400' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none`}
+                  placeholder="03001234567"
                 />
+                {phoneError && <p className="text-red-500 text-xs mt-1">{phoneError}</p>}
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
-                <input
-                  type="text"
+                <select
                   name="city"
                   value={formData.city}
                   onChange={handleChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  placeholder="Lahore"
-                />
+                >
+                  <option value="">Select City</option>
+                  <option value="Islamabad">Islamabad</option>
+                  <option value="Lahore">Lahore</option>
+                  <option value="Sialkot">Sialkot</option>
+                  <option value="Rawalpindi">Rawalpindi</option>
+                  <option value="Karachi">Karachi</option>
+                </select>
               </div>
 
               <div>
@@ -149,6 +190,7 @@ export default function RegisterPage() {
                 <input
                   type="date"
                   name="dateOfBirth"
+                  max={new Date().toISOString().split('T')[0]}
                   value={formData.dateOfBirth}
                   onChange={handleChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"

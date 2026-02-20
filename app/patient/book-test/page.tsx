@@ -38,8 +38,9 @@ export default function BookTestPage() {
   const [step, setStep] = useState(1)
   const [selectedTests, setSelectedTests] = useState<string[]>([])
   const [address, setAddress] = useState({
-    line1: "",
-    line2: "",
+    house: "",
+    street: "",
+    area: "",
     city: "",
     state: "",
     zipCode: "",
@@ -93,13 +94,13 @@ export default function BookTestPage() {
     console.log("Confirm button clicked")
     console.log("State:", { selectedTests, address, schedule })
 
-    if (selectedTests.length === 0 || !address.line1 || !address.city || !schedule.date || !schedule.time) {
+    if (selectedTests.length === 0 || !address.house || !address.street || !address.city || !schedule.date || !schedule.time) {
       console.log("Validation failed")
       alert("Please fill in all required fields")
       return
     }
 
-    const fullAddress = `${address.line1}${address.line2 ? ", " + address.line2 : ""}, ${address.city}, ${address.state} ${address.zipCode}`
+    const fullAddress = `House # ${address.house}, Street # ${address.street}${address.area ? ", " + address.area : ""}, ${address.city}, ${address.state} ${address.zipCode}`
 
     // ISO format for date roughly
     // Handle 12h format "12:00 PM" -> 24h
@@ -223,36 +224,53 @@ export default function BookTestPage() {
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900 mb-6">Delivery Address</h2>
                   <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Address Line 1</label>
-                      <input
-                        type="text"
-                        value={address.line1}
-                        onChange={(e) => handleAddressChange("line1", e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                        placeholder="Street address"
-                      />
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">House / Building #</label>
+                        <input
+                          type="text"
+                          value={address.house}
+                          onChange={(e) => handleAddressChange("house", e.target.value)}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                          placeholder="e.g. 12-A"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Street / Road</label>
+                        <input
+                          type="text"
+                          value={address.street}
+                          onChange={(e) => handleAddressChange("street", e.target.value)}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                          placeholder="e.g. 5 or Main Boulevard"
+                        />
+                      </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Address Line 2 (Optional)</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Area / Sector (Optional)</label>
                       <input
                         type="text"
-                        value={address.line2}
-                        onChange={(e) => handleAddressChange("line2", e.target.value)}
+                        value={address.area}
+                        onChange={(e) => handleAddressChange("area", e.target.value)}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                        placeholder="Apartment, suite, etc."
+                        placeholder="e.g. G-10, Model Town, Bahria Town"
                       />
                     </div>
                     <div className="grid md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
-                        <input
-                          type="text"
+                        <select
                           value={address.city}
                           onChange={(e) => handleAddressChange("city", e.target.value)}
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                          placeholder="City"
-                        />
+                        >
+                          <option value="">Select City</option>
+                          <option value="Islamabad">Islamabad</option>
+                          <option value="Lahore">Lahore</option>
+                          <option value="Sialkot">Sialkot</option>
+                          <option value="Rawalpindi">Rawalpindi</option>
+                          <option value="Karachi">Karachi</option>
+                        </select>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
@@ -309,6 +327,7 @@ export default function BookTestPage() {
                       <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
                       <input
                         type="date"
+                        min={new Date().toISOString().split('T')[0]}
                         value={schedule.date}
                         onChange={(e) => handleScheduleChange("date", e.target.value)}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
@@ -378,8 +397,8 @@ export default function BookTestPage() {
                     <div className="border-l-4 border-green-600 pl-4 py-2">
                       <h3 className="font-semibold text-gray-900 mb-2">Delivery Address</h3>
                       <p className="text-gray-700">
-                        {address.line1}
-                        {address.line2 && `, ${address.line2}`}
+                        House # {address.house}, Street # {address.street}
+                        {address.area && `, ${address.area}`}
                       </p>
                       <p className="text-gray-700">
                         {address.city}, {address.state} {address.zipCode}
