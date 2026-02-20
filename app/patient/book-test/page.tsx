@@ -274,10 +274,13 @@ export default function BookTestPage() {
                       <label className="block text-sm font-medium text-gray-700 mb-1">Zip Code</label>
                       <input
                         type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength={5}
                         value={address.zipCode}
-                        onChange={(e) => handleAddressChange("zipCode", e.target.value)}
+                        onChange={(e) => handleAddressChange("zipCode", e.target.value.replace(/\D/g, ''))}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                        placeholder="110001"
+                        placeholder="44000"
                       />
                     </div>
                   </div>
