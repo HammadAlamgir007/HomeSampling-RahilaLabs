@@ -310,7 +310,13 @@ export default function BookTestPage() {
                       Back
                     </button>
                     <button
-                      onClick={() => setStep(3)}
+                      onClick={() => {
+                        if (!address.house || !address.street || !address.city || !address.state || !address.zipCode) {
+                          alert("Please fill in all required address fields before proceeding.");
+                          return;
+                        }
+                        setStep(3);
+                      }}
                       className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
                     >
                       Next
