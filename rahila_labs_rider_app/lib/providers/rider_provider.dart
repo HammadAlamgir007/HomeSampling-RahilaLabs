@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
 import '../models/rider.dart';
 import '../models/task.dart';
 import '../services/api_service.dart';
@@ -188,21 +189,30 @@ class RiderProvider with ChangeNotifier {
     }
   }
 
-  // Collect Sample
   Future<bool> collectSample({
     required int taskId,
-    required String photoPath,
+    required XFile photo,
     required String notes,
   }) async {
     try {
-      final position = await _locationService.getCurrentLocation();
+      double lat = 0.0;
+      double lng = 0.0;
+
+      try {
+        // Prevent Geolocator from infinitely hanging on Flutter Web (Insecure HTTP Context)
+        final position = await _locationService.getCurrentLocation().timeout(const Duration(seconds: 5));
+        lat = position.latitude;
+        lng = position.longitude;
+      } catch (e) {
+        print('Skipping precise location due to Geolocation block on Web: $e');
+      }
       
       await _apiService.collectSample(
         taskId: taskId,
-        photoPath: photoPath,
+        photo: photo,
         notes: notes,
-        latitude: position.latitude,
-        longitude: position.longitude,
+        latitude: lat,
+        longitude: lng,
       );
       
       await loadTasks();

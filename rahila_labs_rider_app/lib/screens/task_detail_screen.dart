@@ -139,7 +139,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     final provider = Provider.of<RiderProvider>(context, listen: false);
     final success = await provider.collectSample(
       taskId: widget.task.id,
-      photoPath: _selectedImage!.path,
+      photo: _selectedImage!,
       notes: _notesController.text,
     );
     
@@ -148,6 +148,13 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
         const SnackBar(content: Text('Sample collected successfully')),
       );
       Navigator.pop(context);
+    } else if (!success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(provider.error ?? 'Failed to collect sample. Check image rules.'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -166,8 +173,10 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        title: Text('Task #${widget.task.id}'),
+        title: Text('Task #${widget.task.id}', style: const TextStyle(fontWeight: FontWeight.bold)),
+        elevation: 0,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -176,6 +185,11 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
           children: [
             // Status Card
             Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: Colors.blue.shade200),
+              ),
               color: Colors.blue[50],
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -196,19 +210,27 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
 
             // Patient Info
             Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Patient Information',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      children: [
+                        Icon(Icons.person_outline, color: Colors.blue[800]),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Patient Information',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
-                    const Divider(),
+                    const Divider(height: 24),
                     ListTile(
                       leading: const Icon(Icons.person),
                       title: Text(widget.task.patientName ?? 'Unknown'),
@@ -244,8 +266,10 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
             // Sample Collection (for on-way status)
             if (widget.task.isOnWay) ...[
               Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -256,17 +280,18 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const Divider(),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 12),
                       
                       // Photo
                       if (_selectedImage != null)
-                        Image.network(
-                          _selectedImage!.path,
-                          height: 200,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.network(
+                            _selectedImage!.path,
+                            height: 200,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
                             return Container(
                               height: 200,
                               decoration: BoxDecoration(
@@ -279,18 +304,26 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                             );
                           },
                         )
+                      )
                       else
                         Container(
                           height: 200,
+                          width: double.infinity,
                           decoration: BoxDecoration(
-                            color: Colors.grey[200],
-                            borderRadius: BorderRadius.circular(8),
+                            color: Colors.grey[100],
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.shade300, style: BorderStyle.solid),
                           ),
-                          child: const Center(
-                            child: Text('No photo taken'),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.camera_alt, size: 48, color: Colors.grey[400]),
+                              const SizedBox(height: 8),
+                              Text('No photo taken', style: TextStyle(color: Colors.grey[600])),
+                            ]
                           ),
                         ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
                       ElevatedButton.icon(
                         onPressed: _pickImage,
                         icon: const Icon(Icons.photo_library),
@@ -301,13 +334,19 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                       ),
                       const SizedBox(height: 16),
                       
+                      const SizedBox(height: 20),
+                      
                       // Notes
                       TextField(
                         controller: _notesController,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Collection Notes',
                           hintText: 'Add any notes about the sample...',
-                          border: OutlineInputBorder(),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12)
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey[50],
                         ),
                         maxLines: 3,
                       ),
@@ -319,23 +358,29 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
             ],
 
             // Action Buttons
+            const SizedBox(height: 8),
             if (widget.task.isPending) ...[
               ElevatedButton(
                 onPressed: _handleAccept,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
-                  minimumSize: const Size(double.infinity, 48),
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 54),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
                 ),
-                child: const Text('Accept Task'),
+                child: const Text('Accept Task', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               OutlinedButton(
                 onPressed: _handleReject,
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.red,
-                  minimumSize: const Size(double.infinity, 48),
+                  side: const BorderSide(color: Colors.red),
+                  minimumSize: const Size(double.infinity, 54),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                child: const Text('Reject Task'),
+                child: const Text('Reject Task', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ),
             ],
 
@@ -343,30 +388,41 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
               ElevatedButton(
                 onPressed: _handleMarkOnWay,
                 style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 48),
+                  backgroundColor: Colors.blue[600],
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 54),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
                 ),
-                child: const Text('Mark as On the Way'),
+                child: const Text('Mark as On the Way', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ),
 
             if (widget.task.isOnWay)
               ElevatedButton(
                 onPressed: _handleCollectSample,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.purple,
-                  minimumSize: const Size(double.infinity, 48),
+                  backgroundColor: Colors.purple[600],
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 54),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
                 ),
-                child: const Text('Mark Sample Collected'),
+                child: const Text('Mark Sample Collected', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ),
 
             if (widget.task.isCollected)
               ElevatedButton(
                 onPressed: _handleDeliverSample,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  minimumSize: const Size(double.infinity, 48),
+                  backgroundColor: Colors.teal[600],
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(double.infinity, 54),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
                 ),
-                child: const Text('Mark Delivered to Lab'),
+                child: const Text('Mark Delivered to Lab', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ),
+            const SizedBox(height: 24),
           ],
         ),
       ),

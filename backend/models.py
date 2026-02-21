@@ -11,9 +11,15 @@ class User(db.Model):
     role = db.Column(db.String(20), default='patient')  # patient, admin, rider
     
     # Profile fields
+    mrn = db.Column(db.String(50), unique=True, nullable=True) # Medical Record Number for patients
     phone = db.Column(db.String(20))
     city = db.Column(db.String(50))
     status = db.Column(db.String(20), default='active')
+    
+    # Auth & security fields
+    is_verified = db.Column(db.Boolean, default=False)
+    failed_login_attempts = db.Column(db.Integer, default=0)
+    locked_until = db.Column(db.DateTime, nullable=True)
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -23,15 +29,19 @@ class User(db.Model):
             'username': self.username,
             'email': self.email,
             'role': self.role,
+            'mrn': self.mrn,
             'phone': self.phone,
             'city': self.city,
-            'status': self.status
+            'status': self.status,
+            'is_verified': self.is_verified
         }
 
 class OTP(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), nullable=False)
     otp_code = db.Column(db.String(6), nullable=False)
+    purpose = db.Column(db.String(50), default='registration')
+    attempts = db.Column(db.Integer, default=0)
     expires_at = db.Column(db.DateTime, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -107,6 +117,8 @@ class Appointment(db.Model):
     test_id = db.Column(db.Integer, db.ForeignKey('test.id'), nullable=False)
     appointment_date = db.Column(db.DateTime, nullable=False)
     
+    booking_order_id = db.Column(db.String(50), unique=True, nullable=True)
+    
     # Status: pending, assigned_to_rider, rider_accepted, rider_rejected, rider_on_way, sample_collected, delivered_to_lab, completed
     status = db.Column(db.String(30), default='pending')
     address = db.Column(db.String(200), nullable=False)
@@ -139,6 +151,7 @@ class Appointment(db.Model):
     def to_dict(self, include_rider=True):
         data = {
             'id': self.id,
+            'booking_order_id': self.booking_order_id,
             'user_id': self.user_id,
             'test_id': self.test_id,
             'test_name': self.test.name if self.test else None,
@@ -147,6 +160,7 @@ class Appointment(db.Model):
             'patient_phone': self.user.phone if self.user else None,
             'patient_city': self.user.city if self.user else None,
             'patient_email': self.user.email if self.user else None,
+            'patient_mrn': self.user.mrn if self.user else None,
             'date': self.appointment_date.isoformat(),
             'status': self.status,
             'address': self.address,

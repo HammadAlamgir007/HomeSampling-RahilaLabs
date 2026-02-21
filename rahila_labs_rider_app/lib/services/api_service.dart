@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:image_picker/image_picker.dart';
 import '../models/rider.dart';
 import '../models/task.dart';
 
@@ -185,7 +187,7 @@ class ApiService {
   // Collect Sample
   Future<void> collectSample({
     required int taskId,
-    required String photoPath,
+    required XFile photo,
     required String notes,
     required double latitude,
     required double longitude,
@@ -201,12 +203,26 @@ class ApiService {
     request.fields['notes'] = notes;
     request.fields['latitude'] = latitude.toString();
     request.fields['longitude'] = longitude.toString();
-    request.files.add(await http.MultipartFile.fromPath('sample_photo', photoPath));
+    
+    // Provide a valid default filename so the Flask backend secure_filename() doesn't drop it.
+    // Web blobs often have names but no extensions, so we must force a .jpg suffix if missing.
+    final String secureFilename = (photo.name.isNotEmpty && photo.name.contains('.')) 
+        ? photo.name 
+        : '${photo.name.isNotEmpty ? photo.name : "sample_photo"}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        
+    final bytes = await photo.readAsBytes();
+    request.files.add(http.MultipartFile.fromBytes(
+      'sample_photo', 
+      bytes,
+      filename: secureFilename,
+      contentType: MediaType('image', 'jpeg'),
+    ));
 
     final response = await request.send();
 
     if (response.statusCode != 200) {
-      throw Exception('Failed to collect sample');
+      final respStr = await response.stream.bytesToString();
+      throw Exception('Failed to collect sample: ${response.statusCode} - $respStr');
     }
   }
 

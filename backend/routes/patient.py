@@ -2,6 +2,11 @@ from flask import Blueprint, request, jsonify
 from models import db, Test, Appointment
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from datetime import datetime
+from utils.identifiers import generate_booking_id
+from utils.mail import send_booking_confirmation
+from utils.api import api_response
+from utils.extensions import limiter
+from models import User
 
 patient_bp = Blueprint('patient', __name__)
 
@@ -12,6 +17,7 @@ def get_tests():
 
 @patient_bp.route('/book', methods=['POST'])
 @jwt_required()
+@limiter.limit("5 per minute", error_message="You are booking too quickly. Please pause.")
 def book_appointment():
     claims = get_jwt()
     if claims.get('type') != 'user':
@@ -34,18 +40,49 @@ def book_appointment():
         print(f"Date parsing error: {e}")
         return jsonify({'error': 'Invalid date format. Use ISO format.'}), 400
 
+    # Idempotency Check: Prevent duplicate exact bookings
+    existing = Appointment.query.filter_by(
+        user_id=current_user_id,
+        test_id=data['test_id'],
+        appointment_date=appointment_date,
+        status='pending'
+    ).first()
+    
+    if existing:
+        return jsonify({'error': 'A booking for this exact test and time slot already exists.'}), 409
+
     new_appointment = Appointment(
         user_id=current_user_id,
         test_id=data['test_id'],
         appointment_date=appointment_date,
         address=data['address'],
+        booking_order_id=generate_booking_id(),
         status='pending'
     )
 
     db.session.add(new_appointment)
     db.session.commit()
+    
+    # Retrieve relations for email
+    patient = User.query.get(current_user_id)
+    test = Test.query.get(data['test_id'])
+    test_name = test.name if test else "Laboratory Test"
+    
+    # Send Automated Confirmation
+    mail_result = send_booking_confirmation(
+        patient_email=patient.email,
+        patient_name=patient.username,
+        mrn=patient.mrn or "MRN-PENDING",
+        booking_id=new_appointment.booking_order_id,
+        test_name=test_name,
+        test_date=appointment_date.strftime("%Y-%m-%d %I:%M %p")
+    )
 
-    return jsonify({'message': 'Appointment booked successfully', 'appointment': new_appointment.to_dict()}), 201
+    return jsonify({
+        'message': 'Appointment booked successfully', 
+        'appointment': new_appointment.to_dict(),
+        'email_sent': True if mail_result else False
+    }), 201
 
 @patient_bp.route('/bookings', methods=['GET'])
 @jwt_required()

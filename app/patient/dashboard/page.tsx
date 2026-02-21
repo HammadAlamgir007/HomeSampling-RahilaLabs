@@ -34,6 +34,7 @@ export default function DashboardPage() {
             // Map backend format to frontend format
             const formatted = data.map((b: any) => ({
               id: b.id,
+              bookingOrderId: b.booking_order_id,
               userId: b.user_id,
               testId: b.test_id,
               testName: b.test_name,
@@ -105,7 +106,10 @@ export default function DashboardPage() {
           <div className="max-w-6xl mx-auto">
             <div className="mb-8 mt-4 md:mt-0">
               <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">Welcome, {user.name}!</h1>
-              <p className="text-gray-600 dark:text-slate-400">Manage your health tests and bookings</p>
+              <p className="text-gray-600 dark:text-slate-400">
+                <span className="font-semibold text-blue-600 mr-4">MRN: {user.mrn || "Pending"}</span>
+                Manage your health tests and bookings
+              </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
@@ -149,7 +153,14 @@ export default function DashboardPage() {
                     <div key={booking.id} className="border border-gray-200 dark:border-slate-800 rounded-lg p-4 hover:shadow-md transition bg-slate-50 dark:bg-slate-950/50">
                       <div className="flex justify-between items-start mb-2">
                         <div>
-                          <h3 className="font-semibold text-gray-900 dark:text-gray-100">{booking.testName}</h3>
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-semibold text-gray-900 dark:text-gray-100">{booking.testName}</h3>
+                            {booking.bookingOrderId && (
+                              <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
+                                {booking.bookingOrderId}
+                              </span>
+                            )}
+                          </div>
                           <p className="text-sm text-gray-600 dark:text-slate-400">Scheduled: {booking.scheduledDate}</p>
                         </div>
                         <div className="flex flex-col items-end gap-2">
@@ -195,7 +206,14 @@ export default function DashboardPage() {
                   {bookings.filter(b => b.status === "completed" || b.status === "ready").map((booking) => (
                     <div key={booking.id} className="border border-green-200 dark:border-green-900 rounded-lg p-4 bg-green-50 dark:bg-green-900/20 flex justify-between items-center">
                       <div>
-                        <h3 className="font-semibold text-gray-900 dark:text-gray-100">{booking.testName}</h3>
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold text-gray-900 dark:text-gray-100">{booking.testName}</h3>
+                          {booking.bookingOrderId && (
+                            <span className="bg-green-100 text-green-800 text-xs font-semibold px-2 py-0.5 rounded dark:bg-green-900 dark:text-green-300">
+                              {booking.bookingOrderId}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-sm text-gray-600 dark:text-slate-400">{booking.scheduledDate}</p>
                       </div>
                       <div>

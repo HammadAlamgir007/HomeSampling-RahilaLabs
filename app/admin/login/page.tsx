@@ -37,6 +37,10 @@ export default function AdminLoginPage() {
                 setAuthToken(data.token)
                 setAdmin(data.user)
                 setUserRole("admin")
+
+                document.cookie = `rahila_token=${data.token}; path=/; max-age=86400;`
+                document.cookie = `rahila_role=admin; path=/; max-age=86400;`
+
                 router.push("/admin")
             } else {
                 setError(data.error || "Invalid credentials")

@@ -331,6 +331,12 @@ from werkzeug.utils import secure_filename
 UPLOAD_FOLDER = 'uploads/reports'
 ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg'}
 
+import uuid
+
+# Size limits
+MAX_IMAGE_SIZE = 2 * 1024 * 1024 # 2MB
+MAX_DOC_SIZE = 5 * 1024 * 1024 # 5MB
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -352,7 +358,20 @@ def upload_report(appointment_id):
         return jsonify({'error': 'No selected file'}), 400
         
     if file and allowed_file(file.filename):
-        filename = secure_filename(f"report_{appointment_id}_{file.filename}")
+        # Size validation
+        file.seek(0, os.SEEK_END)
+        file_length = file.tell()
+        file.seek(0, os.SEEK_SET)
+
+        ext = file.filename.rsplit('.', 1)[1].lower()
+        if ext in ['png', 'jpg', 'jpeg'] and file_length > MAX_IMAGE_SIZE:
+             return jsonify({'error': 'Image file size exceeds 2MB limit'}), 400
+        elif ext == 'pdf' and file_length > MAX_DOC_SIZE:
+             return jsonify({'error': 'Document file size exceeds 5MB limit'}), 400
+
+        # Secure naming
+        safe_filename = secure_filename(file.filename)
+        randomized_name = f"{uuid.uuid4().hex}_{safe_filename}"
         
         # Use absolute path based on app location
         base_dir = os.path.join(current_app.root_path, 'uploads', 'reports')
@@ -360,15 +379,15 @@ def upload_report(appointment_id):
         if not os.path.exists(base_dir):
             os.makedirs(base_dir)
             
-        file.save(os.path.join(base_dir, filename))
+        file.save(os.path.join(base_dir, randomized_name))
         
         # Update db
         appointment = Appointment.query.get(appointment_id)
         if appointment:
-            appointment.report_path = filename
+            appointment.report_path = randomized_name
             appointment.status = 'completed' # Auto-complete
             db.session.commit()
-            return jsonify({'message': 'File uploaded', 'path': filename}), 200
+            return jsonify({'message': 'File uploaded', 'path': randomized_name}), 200
             
     return jsonify({'error': 'File type not allowed'}), 400
 

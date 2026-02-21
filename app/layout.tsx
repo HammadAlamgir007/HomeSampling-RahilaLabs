@@ -2,6 +2,7 @@ import "./globals.css"
 import type React from "react"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Analytics } from "@vercel/analytics/react"
+import { Toaster } from "sonner"
 
 export default function RootLayout({
   children,
@@ -31,6 +32,7 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="light">
           {children}
         </ThemeProvider>
+        <Toaster position="top-right" richColors />
         <Analytics />
       </body>
     </html>

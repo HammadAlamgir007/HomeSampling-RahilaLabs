@@ -38,6 +38,10 @@ export function AdminSidebar() {
   const handleLogout = () => {
     setAuthToken(null)
     setAdmin(null)
+
+    document.cookie = "rahila_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
+    document.cookie = "rahila_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
+
     router.push("/admin/login")
   }
 

@@ -1,0 +1,14 @@
+nohup: ignoring input
+nohup: failed to run command '../venv/Scripts/python': No such file or directory
+2026-02-21 03:49:25,905 INFO: Rahila Labs startup [in /home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/app.py:23]
+2026-02-21 03:49:26,682 INFO: Rahila Labs startup [in /home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/app.py:23]
+2026-02-21 19:46:25,180 INFO: Rahila Labs startup [in /home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/app.py:23]
+2026-02-21 19:46:53,770 INFO: Rahila Labs startup [in /home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/app.py:23]
+2026-02-21 19:56:39,318 INFO: Rahila Labs startup [in /home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/app.py:23]
+2026-02-21 20:00:19,390 INFO: Rahila Labs startup [in /home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/app.py:23]
+2026-02-21 20:00:20,087 INFO: Rahila Labs startup [in /home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/app.py:23]
+2026-02-21 20:03:31,514 INFO: Rahila Labs startup [in /home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/app.py:23]
+2026-02-21 20:09:32,888 INFO: Rahila Labs startup [in /home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/app.py:23]
+2026-02-21 20:19:57,010 INFO: Rahila Labs startup [in /home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/app.py:23]
+2026-02-21 20:19:57,720 INFO: Rahila Labs startup [in /home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/app.py:23]
+2026-02-21 20:29:22,505 INFO: Rahila Labs startup [in /home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/app.py:23]

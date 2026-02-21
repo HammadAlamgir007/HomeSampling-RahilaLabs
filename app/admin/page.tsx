@@ -3,6 +3,7 @@
 import { useStore } from "@/lib/store"
 import { useEffect, useState } from "react"
 import { API_BASE_URL } from "@/lib/api_config"
+import Link from "next/link"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
 import { AdminNavbar } from "@/components/admin/admin-navbar"
 import { StatCardAdmin } from "@/components/admin/stat-card-admin"
@@ -160,18 +161,26 @@ export default function AdminDashboard() {
                   <CardTitle>Quick Actions</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <Button variant="outline" className="w-full justify-start bg-transparent">
-                    Upload Report
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start bg-transparent">
-                    Add Patient
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start bg-transparent">
-                    Schedule Appointment
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start bg-transparent">
-                    Create Test Package
-                  </Button>
+                  <Link href="/admin/reports" className="w-full block">
+                    <Button variant="outline" className="w-full justify-start bg-transparent">
+                      Upload Report
+                    </Button>
+                  </Link>
+                  <Link href="/admin/patients" className="w-full block">
+                    <Button variant="outline" className="w-full justify-start bg-transparent">
+                      Add Patient
+                    </Button>
+                  </Link>
+                  <Link href="/admin/appointments" className="w-full block">
+                    <Button variant="outline" className="w-full justify-start bg-transparent">
+                      Schedule Appointment
+                    </Button>
+                  </Link>
+                  <Link href="/admin/tests" className="w-full block">
+                    <Button variant="outline" className="w-full justify-start bg-transparent">
+                      Create Test Package
+                    </Button>
+                  </Link>
                 </CardContent>
               </Card>
             </div>

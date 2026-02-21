@@ -7,6 +7,7 @@ import Link from "next/link"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import BookingStepper from "@/components/booking-stepper"
+import { toast } from "sonner"
 import { TIME_SLOTS, STATES } from "@/lib/constants"
 import { API_BASE_URL } from "@/lib/api_config"
 
@@ -50,6 +51,7 @@ export default function BookTestPage() {
     time: "",
   })
   const [notes, setNotes] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   if (!user) {
     return (
@@ -91,6 +93,8 @@ export default function BookTestPage() {
   }
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
+
     console.log("Confirm button clicked")
     console.log("State:", { selectedTests, address, schedule })
 
@@ -125,8 +129,13 @@ export default function BookTestPage() {
       return;
     }
 
+    setIsSubmitting(true);
+
     try {
       // Create bookings sequentially
+      const orderIds: string[] = [];
+      let emailSent = false;
+
       for (const testId of selectedTests) {
         const response = await fetch(`${API_BASE_URL}/api/patient/book`, {
           method: "POST",
@@ -145,41 +154,62 @@ export default function BookTestPage() {
           const err = await response.json()
           throw new Error(err.error || "Failed to book")
         }
+
+        const data = await response.json()
+        if (data.appointment?.booking_order_id) {
+          orderIds.push(data.appointment.booking_order_id);
+        }
+        if (data.email_sent) {
+          emailSent = true;
+        }
       }
 
-      alert("Booking confirmed successfully!")
+      toast.success(
+        <div>
+          <p>Booking confirmed successfully!</p>
+          <p className="text-sm opacity-90 mt-1">Order IDs: {orderIds.join(', ')}</p>
+        </div>,
+        { duration: 5000 }
+      );
+
+      if (emailSent) {
+        toast.success("Confirmation email sent successfully!");
+      }
+
       router.push("/patient/dashboard")
 
     } catch (error: any) {
       console.error("Booking error:", error)
-      alert(`Booking failed: ${error.message} \n Check console for details.`)
+      toast.error(`Booking failed: ${error.message}`)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+      <main className="min-h-screen bg-gradient-to-b from-blue-50 to-white dark:from-slate-950 dark:to-slate-900 transition-colors duration-300">
         <div className="container mx-auto px-4 py-16">
           <div className="max-w-4xl mx-auto">
             <div className="mb-12">
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">Book a Test</h1>
-              <p className="text-gray-600">Follow the steps to schedule your home sample collection</p>
+              <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">Book a Test</h1>
+              <p className="text-gray-600 dark:text-slate-400">Follow the steps to schedule your home sample collection</p>
             </div>
 
             <BookingStepper currentStep={step} />
 
-            <div className="bg-white rounded-lg shadow-lg p-8 mt-8">
+            <div className="bg-white dark:bg-slate-900 dark:border dark:border-slate-800 rounded-lg shadow-lg p-8 mt-8">
               {step === 1 && (
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-6">Select Tests</h2>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Select Tests</h2>
                   <div className="grid md:grid-cols-2 gap-4">
                     {tests.map((test) => (
                       <div
                         key={test.id}
                         className={`p-4 border-2 rounded-lg cursor-pointer transition ${selectedTests.includes(test.id)
-                          ? "border-blue-600 bg-blue-50"
-                          : "border-gray-200 hover:border-blue-300"
+                          ? "border-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-500"
+                          : "border-gray-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-500 dark:bg-slate-800"
                           }`}
                         onClick={() => handleSelectTest(test.id)}
                       >
@@ -222,7 +252,7 @@ export default function BookTestPage() {
 
               {step === 2 && (
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-6">Delivery Address</h2>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Delivery Address</h2>
                   <div className="space-y-4">
                     <div className="grid md:grid-cols-2 gap-4">
                       <div>
@@ -327,7 +357,7 @@ export default function BookTestPage() {
 
               {step === 3 && (
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-6">Schedule Collection</h2>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Schedule Collection</h2>
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
@@ -386,7 +416,7 @@ export default function BookTestPage() {
 
               {step === 4 && (
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-6">Confirm Booking</h2>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Confirm Booking</h2>
                   <div className="space-y-4 mb-6">
                     <div className="border-l-4 border-blue-600 pl-4 py-2">
                       <h3 className="font-semibold text-gray-900 mb-2">Selected Tests</h3>
@@ -426,9 +456,10 @@ export default function BookTestPage() {
                     </button>
                     <button
                       onClick={handleSubmit}
-                      className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold"
+                      disabled={isSubmitting}
+                      className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold disabled:opacity-50"
                     >
-                      Confirm Booking
+                      {isSubmitting ? "Processing..." : "Confirm Booking"}
                     </button>
                   </div>
                 </div>

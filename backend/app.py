@@ -1,30 +1,46 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from config import Config
 from models import db, User, Test, Appointment, Rider
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+import logging
+from logging.handlers import RotatingFileHandler
 
 app = Flask(__name__)
 app.config.from_object(Config)
 
-# Security: Rate Limiting
-limiter = Limiter(
-    get_remote_address,
-    app=app,
-    default_limits=["200 per day", "50 per hour"],
-    storage_uri="memory://"
-)
+# Configure Logging
+if not app.debug:
+    file_handler = RotatingFileHandler('backend_log.txt', maxBytes=10240, backupCount=10)
+    file_handler.setFormatter(logging.Formatter(
+        '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+    ))
+    file_handler.setLevel(logging.INFO)
+    app.logger.addHandler(file_handler)
+    app.logger.setLevel(logging.INFO)
+    app.logger.info('Rahila Labs startup')
+
+# JWT Secure Cookie Configuration
+app.config['JWT_TOKEN_LOCATION'] = ['headers', 'cookies']
+app.config['JWT_COOKIE_SECURE'] = False # Set to True in production (HTTPS)
+app.config['JWT_COOKIE_CSRF_PROTECT'] = True # Requires X-CSRF-TOKEN header for state-changing requests
+app.config['JWT_CSRF_IN_COOKIES'] = True # Creates a csrf_access_token cookie automatically
+
+from utils.extensions import limiter
+limiter.init_app(app)
 
 # Allow all origins, methods, and headers for development
-CORS(app, resources={r"/*": {"origins": "*", "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"], "allow_headers": "*", "supports_credentials": False}})
+CORS(app, resources={r"/*": {"origins": "*", "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"], "allow_headers": ["Content-Type", "Authorization", "X-CSRF-TOKEN"], "supports_credentials": True}})
 
 @app.after_request
 def add_cors_headers(response):
-    response.headers['Access-Control-Allow-Origin'] = '*'
+    # For local development with Flutter Web, we need explicit headers on preflight
+    response.headers['Access-Control-Allow-Origin'] = request.headers.get('Origin', '*')
     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
-    response.headers['Access-Control-Allow-Headers'] = '*'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-CSRF-TOKEN'
+    response.headers['Access-Control-Allow-Credentials'] = 'true'
     return response
 
 db.init_app(app)
@@ -85,7 +101,8 @@ def init_db():
                 email="admin@rahilalabs.com", 
                 password_hash=generate_password_hash("admin123"), 
                 role="admin",
-                status="active"
+                status="active",
+                is_verified=True
             )
             db.session.add(admin)
             db.session.commit()
@@ -93,7 +110,7 @@ def init_db():
         
         # Seed Demo Patient & Appointment
         if not User.query.filter_by(role='patient').first():
-            patient = User(username="ali", email="ali@example.com", password_hash=generate_password_hash("password"), role="patient", phone="1234567890", city="Lahore")
+            patient = User(username="ali", email="ali@example.com", password_hash=generate_password_hash("password"), role="patient", phone="1234567890", city="Lahore", is_verified=True)
             db.session.add(patient)
             db.session.commit()
             

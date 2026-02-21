@@ -1,15 +1,19 @@
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
+import { useState, useRef } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useStore } from "@/lib/store"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
-
 import { API_BASE_URL } from "@/lib/api_config"
+import { toast } from "sonner"
+
+import { PasswordInput } from "@/components/ui/password-input"
+import { PhoneInput } from "@/components/ui/phone-input"
+import { SubmitButton } from "@/components/ui/submit-button"
+import { CheckCircle2 } from "lucide-react"
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -23,93 +27,103 @@ export default function RegisterPage() {
     password: "",
     confirmPassword: "",
   })
-  const [error, setError] = useState("")
-  const [phoneError, setPhoneError] = useState("")
-  const [emailError, setEmailError] = useState("")
+
+  const [errors, setErrors] = useState<Record<string, string>>({})
   const [isOtpStep, setIsOtpStep] = useState(false)
   const [otpCode, setOtpCode] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+
+  const refs = {
+    name: useRef<HTMLInputElement>(null),
+    email: useRef<HTMLInputElement>(null),
+    phone: useRef<HTMLInputElement>(null),
+    password: useRef<HTMLDivElement>(null),
+    confirmPassword: useRef<HTMLDivElement>(null),
+  }
+
+  const scrollToFirstError = (errObj: Record<string, string>) => {
+    const firstErrorKey = Object.keys(errObj)[0] as keyof typeof refs
+    if (firstErrorKey && refs[firstErrorKey]?.current) {
+      refs[firstErrorKey].current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      toast.error(`Please fix the errors to continue`)
+    }
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
+    if (errors[e.target.name]) {
+      setErrors(prev => ({ ...prev, [e.target.name]: "" }))
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError("")
-    console.log("Submitting form:", formData)
+    setErrors({})
+    let newErrors: Record<string, string> = {}
 
-    if (!formData.name || !formData.email || !formData.phone || !formData.dateOfBirth || !formData.password) {
-      console.log("Validation failed. Missing fields.")
-      setError("Please fill in all fields")
-      return
+    if (!formData.name) newErrors.name = "Name is required"
+    if (!formData.email) newErrors.email = "Email is required"
+    if (!formData.phone) newErrors.phone = "Phone is required"
+    if (!formData.password) newErrors.password = "Password is required"
+
+    if (!/^[A-Za-z\s]{3,}$/.test(formData.name)) {
+      newErrors.name = "Name must be at least 3 characters and contain only letters"
     }
 
-    // Strict email validation
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
-    const validTLDs = ['com', 'net', 'org', 'edu', 'pk', 'co.uk', 'io', 'gov', 'info', 'biz', 'co.in']
-    const emailDomain = formData.email.split('@')[1] || ''
-    const hasValidTLD = validTLDs.some(tld => emailDomain.endsWith('.' + tld))
-    if (!emailRegex.test(formData.email) || !hasValidTLD) {
-      setEmailError("Please enter a valid email (e.g. name@gmail.com)")
-      return
+    if (!emailRegex.test(formData.email)) {
+      newErrors.email = "Please enter a valid email format"
     }
-    setEmailError("")
 
     if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match")
+      newErrors.confirmPassword = "Passwords do not match"
+    }
+
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/
+    if (!passwordRegex.test(formData.password)) {
+      newErrors.password = "Password must be strong (8+ chars, uppercase, number, symbol)"
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
+      scrollToFirstError(newErrors)
       return
     }
 
-    if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters")
-      return
-    }
-
-    // Validate Pakistani phone number
-    const phone = formData.phone
-    const isMobile = /^03\d{9}$/.test(phone)  // 03XX-XXXXXXX (11 digits)
-    const isLandline = /^0[2-9]\d{8,9}$/.test(phone) // 0XX-XXXXXXXX (10-11 digits)
-    if (!isMobile && !isLandline) {
-      setPhoneError("Enter a valid Pakistani mobile (03XXXXXXXXX) or landline number")
-      return
-    }
-    setPhoneError("")
+    setIsLoading(true)
 
     if (!isOtpStep) {
-      // Step 1: Send OTP
       try {
-        const url = `${API_BASE_URL}/api/auth/send-otp`
-        const response = await fetch(url, {
+        const response = await fetch(`${API_BASE_URL}/api/auth/send-otp`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email: formData.email }),
         })
 
         const data = await response.json()
-        if (!response.ok) {
-          throw new Error(data.error || "Failed to send OTP")
+        if (!data.success) {
+          throw new Error(data.message || "Failed to send OTP")
         }
 
-        // Success: move to OTP step
+        toast.success(data.message)
         setIsOtpStep(true)
-        return
       } catch (err: any) {
-        console.error("OTP send error:", err)
-        setError(err.message)
-        return
+        toast.error(err.message)
+      } finally {
+        setIsLoading(false)
       }
+      return
     }
 
-    // Step 2: Verify OTP and Register
+    // Step 2
     if (!otpCode || otpCode.length !== 6) {
-      setError("Please enter the 6-digit OTP code")
+      toast.error("Please enter the 6-digit OTP code")
+      setIsLoading(false)
       return
     }
 
     try {
-      const url = `${API_BASE_URL}/api/auth/register`
-      console.log("Sending request to:", url)
-      const response = await fetch(url, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -123,21 +137,23 @@ export default function RegisterPage() {
       })
 
       const data = await response.json()
-      console.log("Response:", data)
 
-      if (!response.ok) {
-        throw new Error(data.error || "Registration failed")
+      if (!data.success) {
+        if (data.field) {
+          setErrors({ [data.field]: data.message })
+          scrollToFirstError({ [data.field]: data.message })
+        }
+        throw new Error(data.message || "Registration failed")
       }
 
-      // Automatically redirect to login
-      router.push("/login")
+      toast.success(data.message)
+      setTimeout(() => router.push("/login"), 1500)
     } catch (err: any) {
-      console.error("Registration error:", err)
-      setError(err.message)
+      toast.error(err.message)
+    } finally {
+      setIsLoading(false)
     }
   }
-
-
 
   return (
     <>
@@ -150,55 +166,61 @@ export default function RegisterPage() {
               <p className="text-gray-600">Join Rahila Labs for easy home sample collection</p>
             </div>
 
-            {error && <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">{error}</div>}
-
             {!isOtpStep ? (
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                    placeholder="John Doe"
-                  />
+                  <div className="relative">
+                    <input
+                      ref={refs.name}
+                      type="text"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      className={`w-full px-4 py-2 border ${errors.name ? 'border-red-400' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none`}
+                      placeholder="John Doe"
+                    />
+                    {!errors.name && formData.name.length > 2 && <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500 w-5 h-5" />}
+                  </div>
+                  {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={(e) => {
-                      setFormData({ ...formData, email: e.target.value })
-                      if (emailError) setEmailError("")
-                    }}
-                    className={`w-full px-4 py-2 border ${emailError ? 'border-red-400' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none`}
-                    placeholder="you@example.com"
-                  />
-                  {emailError && <p className="text-red-500 text-xs mt-1">{emailError}</p>}
+                  <p className="text-xs text-gray-500 mb-1">Format: example@domain.com</p>
+                  <div className="relative">
+                    <input
+                      ref={refs.email}
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={(e) => {
+                        setFormData({ ...formData, email: e.target.value.toLowerCase() })
+                        if (errors.email) setErrors(prev => ({ ...prev, email: "" }))
+                      }}
+                      className={`w-full px-4 py-2 border ${errors.email ? 'border-red-400' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none`}
+                      placeholder="you@example.com"
+                    />
+                    {!errors.email && formData.email.includes('@') && formData.email.includes('.') && <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500 w-5 h-5" />}
+                  </div>
+                  {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    inputMode="numeric"
-                    maxLength={11}
-                    value={formData.phone}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/\D/g, '')
-                      setFormData({ ...formData, phone: val })
-                      if (phoneError) setPhoneError("")
-                    }}
-                    className={`w-full px-4 py-2 border ${phoneError ? 'border-red-400' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none`}
-                    placeholder="03001234567"
-                  />
-                  {phoneError && <p className="text-red-500 text-xs mt-1">{phoneError}</p>}
+                  <p className="text-xs text-gray-500 mb-1">Format: 03XX XXXXXXX</p>
+                  <div className="relative" ref={refs.phone}>
+                    <PhoneInput
+                      value={formData.phone}
+                      onChange={(val) => {
+                        setFormData({ ...formData, phone: val })
+                        if (errors.phone) setErrors(prev => ({ ...prev, phone: "" }))
+                      }}
+                      className={errors.phone ? 'border-red-400' : 'border-gray-300'}
+                    />
+                    {!errors.phone && formData.phone.length >= 10 && <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500 w-5 h-5" />}
+                  </div>
+                  {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
                 </div>
 
                 <div>
@@ -218,48 +240,33 @@ export default function RegisterPage() {
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
-                  <input
-                    type="date"
-                    name="dateOfBirth"
-                    max={new Date().toISOString().split('T')[0]}
-                    value={formData.dateOfBirth}
-                    onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  />
-                </div>
-
-                <div>
+                <div ref={refs.password}>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                  <input
-                    type="password"
+                  <p className="text-xs text-gray-500 mb-1">At least 8 chars, include uppercase, number {"&"} symbol</p>
+                  <PasswordInput
                     name="password"
                     value={formData.password}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                    placeholder="••••••••"
+                    showStrengthMeter={true}
+                    className={errors.password ? "border-red-400" : ""}
                   />
+                  {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
                 </div>
 
-                <div>
+                <div ref={refs.confirmPassword}>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
-                  <input
-                    type="password"
+                  <PasswordInput
                     name="confirmPassword"
                     value={formData.confirmPassword}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                    placeholder="••••••••"
+                    className={errors.confirmPassword ? "border-red-400" : ""}
                   />
+                  {errors.confirmPassword && <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>}
                 </div>
 
-                <button
-                  type="submit"
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition"
-                >
+                <SubmitButton isLoading={isLoading} type="submit">
                   Send Verification Code
-                </button>
+                </SubmitButton>
               </form>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -275,12 +282,9 @@ export default function RegisterPage() {
                     placeholder="000000"
                   />
                 </div>
-                <button
-                  type="submit"
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition mt-4"
-                >
+                <SubmitButton isLoading={isLoading} type="submit" className="mt-4">
                   Verify & Create Account
-                </button>
+                </SubmitButton>
                 <div className="text-center mt-4">
                   <button type="button" onClick={() => setIsOtpStep(false)} className="text-sm text-blue-600 hover:underline">
                     Back to edit details

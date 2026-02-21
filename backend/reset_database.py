@@ -34,7 +34,8 @@ with app.app_context():
             email="admin@rahilalabs.com",
             password_hash=generate_password_hash("admin123"),
             role="admin",
-            status="active"
+            status="active",
+            is_verified=True
         )
         db.session.add(admin)
         db.session.commit()
@@ -48,7 +49,8 @@ with app.app_context():
             password_hash=generate_password_hash("password"),
             role="patient",
             phone="1234567890",
-            city="Lahore"
+            city="Lahore",
+            is_verified=True
         )
         db.session.add(patient)
         db.session.commit()

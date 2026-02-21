@@ -40,8 +40,9 @@ export default function CreateRiderPage() {
 
             const data = await response.json()
 
-            if (!response.ok) {
-                throw new Error(data.error || 'Failed to create rider')
+            if (!data.success && !response.ok) {
+                // If backend still throws a non-200, assume message or error mapping
+                throw new Error(data.message || data.error || 'Failed to create rider')
             }
 
             // Success - redirect to riders list

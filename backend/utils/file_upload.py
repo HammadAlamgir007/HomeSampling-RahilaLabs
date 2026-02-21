@@ -15,12 +15,15 @@ def allowed_file(filename):
 def validate_image(file):
     """Validate image file"""
     if not file:
+        print("Validation Failed: No file provided")
         return False, "No file provided"
     
     if file.filename == '':
+        print("Validation Failed: No file selected")
         return False, "No file selected"
     
     if not allowed_file(file.filename):
+        print(f"Validation Failed: File type not allowed for {file.filename}")
         return False, f"File type not allowed. Allowed types: {', '.join(ALLOWED_EXTENSIONS)}"
     
     # Check file size (if possible)
