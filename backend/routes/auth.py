@@ -22,13 +22,17 @@ def send_otp_email(to_email, otp_code):
     msg['To'] = to_email
 
     try:
-        server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+        # Use port 587 and STARTTLS as port 465 SSL is often blocked by Azure
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.ehlo()
+        server.starttls()
         server.login(email_user, email_pass)
         server.send_message(msg)
         server.quit()
+        print(f"DEBUG: Successfully sent email to {to_email}")
         return True
     except Exception as e:
-        print(f"Failed to send email: {e}")
+        print(f"DEBUG Email Error for {to_email}: {e}")
         return False
 
 @auth_bp.route('/send-otp', methods=['POST'])
