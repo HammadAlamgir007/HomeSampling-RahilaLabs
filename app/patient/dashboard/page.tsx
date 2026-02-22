@@ -8,7 +8,10 @@ import Link from "next/link"
 import { STATUS_COLORS } from "@/lib/constants"
 import { API_BASE_URL } from "@/lib/api_config"
 
+import { useRouter } from "next/navigation"
+
 export default function DashboardPage() {
+  const router = useRouter()
   const user = useStore((state) => state.user)
   const authToken = useStore((state) => state.authToken)
   const setBookings = useStore((state) => state.addBooking) // We might need a setBookings method in store, but relying on addBooking in loop or refactoring store
@@ -81,21 +84,15 @@ export default function DashboardPage() {
   const bookings = localBookings
   const upcomingBookings = bookings.filter((b) => b.status !== "ready")
 
-  if (!user) {
-    return (
-      <>
-        <Navbar />
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">Please log in first</h1>
-            <Link href="/login" className="text-blue-600 hover:underline font-semibold">
-              Go to login
-            </Link>
-          </div>
-        </div>
-        <Footer />
-      </>
-    )
+  // Redirect unauthenticated users
+  useEffect(() => {
+    if (!user || !authToken) {
+      router.push("/login")
+    }
+  }, [user, authToken, router])
+
+  if (!user || !authToken) {
+    return null // Render nothing while redirecting
   }
 
   return (
