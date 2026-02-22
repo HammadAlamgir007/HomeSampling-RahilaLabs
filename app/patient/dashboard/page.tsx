@@ -14,11 +14,14 @@ export default function DashboardPage() {
   const router = useRouter()
   const user = useStore((state) => state.user)
   const authToken = useStore((state) => state.authToken)
-  const setBookings = useStore((state) => state.addBooking) // We might need a setBookings method in store, but relying on addBooking in loop or refactoring store
-  // Actually, let's use local state for display if store synchronization is complex, OR assume we want to sync store.
-  // Best practice: Fetch and set local state or update store.
-  // Let's implement a simple fetch and display for now.
+  const setBookings = useStore((state) => state.addBooking)
+
+  const [hasHydrated, setHasHydrated] = useState(false)
   const [localBookings, setLocalBookings] = useState<any[]>([])
+
+  useEffect(() => {
+    setHasHydrated(true)
+  }, [])
 
   useEffect(() => {
     if (authToken) {
@@ -86,13 +89,19 @@ export default function DashboardPage() {
 
   // Redirect unauthenticated users
   useEffect(() => {
-    if (!user || !authToken) {
-      router.push("/login")
+    if (hasHydrated && (!user || !authToken)) {
+      // Clear stale cookie to prevent middleware redirect loop
+      document.cookie = "patient_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+      window.location.href = "/login"
     }
-  }, [user, authToken, router])
+  }, [user, authToken, hasHydrated])
 
-  if (!user || !authToken) {
-    return null // Render nothing while redirecting
+  if (!hasHydrated || !user || !authToken) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-gray-500 font-medium">Redirecting to secure login...</p>
+      </div>
+    )
   }
 
   return (

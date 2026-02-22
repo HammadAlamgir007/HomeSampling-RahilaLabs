@@ -127,32 +127,21 @@ def download_report(filename):
     current_user_id = int(get_jwt_identity())
     
     # Security: Verify ownership
-    # Filename format: report_{appointment_id}_{original_name}
     try:
-        parts = filename.split('_')
-        if len(parts) < 2:
-             return jsonify({'error': 'Invalid filename format'}), 400
-        
-        appointment_id = int(parts[1])
-        appointment = Appointment.query.get(appointment_id)
+        # Lookup the appointment directly by its unique report_path
+        appointment = Appointment.query.filter_by(report_path=filename).first()
         
         if not appointment:
-            return jsonify({'error': 'Appointment not found'}), 404
+            return jsonify({'error': 'Appointment or report not found'}), 404
             
         if appointment.user_id != current_user_id:
-             # Check if user is admin?
-             # For simplicity, if this route is in patient_bp, we assume patient context.
-             # However, admin might want to download too. 
-             # Let's check user role if we want universal access, or assume admin uses a different route.
-             # But admin can just use this route if they have a token.
-             # Let's check role.
              from models import User
              user = User.query.get(current_user_id)
              if user.role != 'admin':
                 return jsonify({'error': 'Unauthorized'}), 403
 
-    except ValueError:
-        return jsonify({'error': 'Invalid filename format'}), 400
+    except Exception as e:
+        return jsonify({'error': 'Server error verifying report ownership'}), 500
 
     reports_dir = os.path.join(current_app.root_path, 'uploads', 'reports')
     return send_from_directory(reports_dir, filename, as_attachment=True)
