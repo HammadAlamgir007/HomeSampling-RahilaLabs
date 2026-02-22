@@ -36,7 +36,8 @@ jobs:
           mkdir -p .next/standalone/.next
           cp -r .next/static .next/standalone/.next/
           
-          # 2. Prevent Azure Kudu from running 'npm install' on the server (which causes OOM)
+          # 2. Prevent Azure Kudu from running 'npm install' or Oryx on the server
+          # We create the .deployment file as a backup, but the main fix is in the deploy step
           echo "[config]" > .next/standalone/.deployment
           echo "SCM_DO_BUILD_DURING_DEPLOYMENT=false" >> .next/standalone/.deployment
           
@@ -83,4 +84,4 @@ jobs:
         with:
           app-name: 'rahila-labs-frontend'
           slot-name: 'Production'
-          package: .
+          package: release.zip
