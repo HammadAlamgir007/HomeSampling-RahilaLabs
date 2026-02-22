@@ -1,18 +1,13 @@
 from app import app
-from models import db, User, Test, Appointment
+from models import db, Appointment, Rider
 
-def check_data():
-    with app.app_context():
-        u_count = User.query.count()
-        t_count = Test.query.count()
-        a_count = Appointment.query.count()
-        
-        print(f"Users: {u_count}")
-        print(f"Tests: {t_count}")
-        print(f"Appointments: {a_count}")
-        
-        if u_count > 0:
-            print("Sample User:", User.query.first().to_dict())
-
-if __name__ == '__main__':
-    check_data()
+with app.app_context():
+    riders = Rider.query.all()
+    print("RIDERS:")
+    for r in riders:
+        print(f"ID={r.id}, Email={r.email}, Name={r.name}")
+    
+    apps = Appointment.query.all()
+    print("\nAPPOINTMENTS:")
+    for a in apps:
+        print(f"ApptID={a.id} | Status={a.status} | AssignedRiderID={a.rider_id}")
