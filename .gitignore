@@ -20,3 +20,15 @@ Thumbs.db
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Python Virtual Environments
+backend/.venv/
+.venv/
+venv/
+env/
+ENV/
+
+# Python Local Logs and Uploads
+backend/backend_log*
+backend/uploads/
+*.log

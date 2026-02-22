@@ -15,8 +15,14 @@ export default function BookTestPage() {
   const router = useRouter()
   const user = useStore((state) => state.user)
   const authToken = useStore((state) => state.authToken)
+  const [hasHydrated, setHasHydrated] = useState(false)
+
   // We'll use local state for tests to ensure we get them from backend
   const [tests, setTests] = useState<any[]>([])
+
+  useEffect(() => {
+    setHasHydrated(true)
+  }, [])
 
   // Fetch tests on load
   useEffect(() => {
@@ -52,6 +58,14 @@ export default function BookTestPage() {
   })
   const [notes, setNotes] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  if (!hasHydrated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
 
   if (!user) {
     return (
@@ -256,7 +270,7 @@ export default function BookTestPage() {
                   <div className="space-y-4">
                     <div className="grid md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">House / Building #</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">House / Building # <span className="text-red-500">*</span></label>
                         <input
                           type="text"
                           value={address.house}
@@ -266,7 +280,7 @@ export default function BookTestPage() {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Street / Road</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Street / Road <span className="text-red-500">*</span></label>
                         <input
                           type="text"
                           value={address.street}
@@ -288,7 +302,7 @@ export default function BookTestPage() {
                     </div>
                     <div className="grid md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">City <span className="text-red-500">*</span></label>
                         <select
                           value={address.city}
                           onChange={(e) => handleAddressChange("city", e.target.value)}
@@ -303,7 +317,7 @@ export default function BookTestPage() {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">State <span className="text-red-500">*</span></label>
                         <select
                           value={address.state}
                           onChange={(e) => handleAddressChange("state", e.target.value)}
@@ -319,7 +333,7 @@ export default function BookTestPage() {
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Zip Code</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Zip Code <span className="text-red-500">*</span></label>
                       <input
                         type="text"
                         inputMode="numeric"
@@ -340,14 +354,9 @@ export default function BookTestPage() {
                       Back
                     </button>
                     <button
-                      onClick={() => {
-                        if (!address.house || !address.street || !address.city || !address.state || !address.zipCode) {
-                          alert("Please fill in all required address fields before proceeding.");
-                          return;
-                        }
-                        setStep(3);
-                      }}
-                      className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
+                      onClick={() => setStep(3)}
+                      disabled={!address.house || !address.street || !address.city || !address.state || !address.zipCode}
+                      className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Next
                     </button>
@@ -360,7 +369,7 @@ export default function BookTestPage() {
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Schedule Collection</h2>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Date <span className="text-red-500">*</span></label>
                       <input
                         type="date"
                         min={new Date().toISOString().split('T')[0]}
@@ -370,7 +379,7 @@ export default function BookTestPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Time Slot</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Time Slot <span className="text-red-500">*</span></label>
                       <select
                         value={schedule.time}
                         onChange={(e) => handleScheduleChange("time", e.target.value)}
@@ -406,7 +415,8 @@ export default function BookTestPage() {
                     </button>
                     <button
                       onClick={() => setStep(4)}
-                      className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
+                      disabled={!schedule.date || !schedule.time}
+                      className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Review
                     </button>
