@@ -29,9 +29,24 @@ jobs:
         run: |
           npm install
           npm run build
+          
+          # 1. Next.js 'standalone' output doesn't include public/ or .next/static/
+          # We must copy them into the standalone dir manually
+          cp -r public .next/standalone/ || true
+          mkdir -p .next/standalone/.next
+          cp -r .next/static .next/standalone/.next/
+          
+          # 2. Prevent Azure Kudu from running 'npm install' on the server (which causes OOM)
+          echo "[config]" > .next/standalone/.deployment
+          echo "SCM_DO_BUILD_DURING_DEPLOYMENT=false" >> .next/standalone/.deployment
+          
+          # 3. Ensure Next.js standalone package.json 'start' script points to server.js
+          node -e "let p=require('./.next/standalone/package.json');p.scripts=p.scripts||{};p.scripts.start='node server.js';require('fs').writeFileSync('./.next/standalone/package.json',JSON.stringify(p,null,2))"
 
       - name: Zip artifact for deployment
-        run: zip -r release.zip . -x "node_modules/*" -x ".git/*" -x ".github/*"
+        run: |
+          cd .next/standalone
+          zip -r ../../release.zip .
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
