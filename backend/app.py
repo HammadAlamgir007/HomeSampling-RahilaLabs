@@ -73,6 +73,9 @@ app.register_blueprint(admin_bp, url_prefix='/api/admin')
 from routes.rider import rider_bp
 app.register_blueprint(rider_bp, url_prefix='/api/rider')
 
+from routes.contact import contact_bp
+app.register_blueprint(contact_bp, url_prefix='/api')
+
 @app.route('/health')
 def health_check():
     return jsonify({'status': 'ok', 'message': 'Rahila Labs Backend is running'})

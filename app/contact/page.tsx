@@ -5,6 +5,8 @@ import type React from "react"
 import { useState } from "react"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
+import { API_BASE_URL } from "@/lib/api_config"
+import { toast } from "sonner"
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -15,26 +17,41 @@ export default function ContactPage() {
     message: "",
   })
   const [submitted, setSubmitted] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setSubmitted(true)
+    setIsLoading(true)
 
-    // Format the message for WhatsApp
-    const messageBody = `*New Contact Request*\n\n*Name:* ${formData.name}\n*Email:* ${formData.email}\n*Phone:* ${formData.phone}\n*Subject:* ${formData.subject}\n*Message:* ${formData.message}`
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/contact`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      })
 
-    // WhatsApp URL (using the provided number 03305941025 -> 923305941025)
-    const whatsappUrl = `https://wa.me/923305941025?text=${encodeURIComponent(messageBody)}`
+      const data = await response.json()
 
-    // Open in new tab
-    window.open(whatsappUrl, '_blank')
-
-    setFormData({ name: "", email: "", phone: "", subject: "", message: "" })
-    setTimeout(() => setSubmitted(false), 5000)
+      if (response.ok) {
+        setSubmitted(true)
+        setFormData({ name: "", email: "", phone: "", subject: "", message: "" })
+        toast.success("Message sent successfully!")
+        setTimeout(() => setSubmitted(false), 5000)
+      } else {
+        toast.error(data.error || "Failed to send message")
+      }
+    } catch (error) {
+      console.error("Contact form error:", error)
+      toast.error("Network error. Please try again later.")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -136,9 +153,10 @@ export default function ContactPage() {
                   </div>
                   <button
                     type="submit"
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition"
+                    disabled={isLoading}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition disabled:opacity-50"
                   >
-                    Send Message
+                    {isLoading ? "Sending..." : "Send Message"}
                   </button>
                 </form>
               </div>
