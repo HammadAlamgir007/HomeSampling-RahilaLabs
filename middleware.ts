@@ -4,58 +4,35 @@ import type { NextRequest } from 'next/server'
 export function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl
 
-    // Extract custom cookies
-    const token = request.cookies.get('rahila_token')?.value
-    const role = request.cookies.get('rahila_role')?.value
+    // Extract custom cookies for different portals independently
+    const patientToken = request.cookies.get('patient_token')?.value
+    const adminToken = request.cookies.get('admin_token')?.value
 
-    const isAuth = !!token
+    const isPatientAuth = !!patientToken
+    const isAdminAuth = !!adminToken
 
     // 1. Secure Admin Routes
-    // Allow access to /admin/login without a token, but protect all other /admin/* routes
     if (pathname.startsWith('/admin') && pathname !== '/admin/login') {
-        if (!isAuth) {
-            // Not logged in -> Redirect to Admin Login
+        if (!isAdminAuth) {
             return NextResponse.redirect(new URL('/admin/login', request.url))
-        }
-
-        if (role !== 'admin') {
-            // Logged in, but NOT an admin -> Kick to general Unauthorized or Home
-            return NextResponse.redirect(new URL('/', request.url))
         }
     }
 
     // 2. Secure Patient Routes
-    // Protect all /patient/* routes (like dashboard, book-test)
     if (pathname.startsWith('/patient')) {
-        if (!isAuth) {
-            // Not logged in -> Redirect to Standard Login
+        if (!isPatientAuth) {
             return NextResponse.redirect(new URL('/login', request.url))
         }
-
-        if (role !== 'patient') {
-            // Logged in as Admin trying to access patient Dashboard -> Redirect to Admin Dashboard
-            if (role === 'admin') {
-                return NextResponse.redirect(new URL('/admin', request.url))
-            }
-            return NextResponse.redirect(new URL('/', request.url))
-        }
     }
 
-    // 3. Prevent logged-in users from seeing Auth pages
-    if (isAuth && (pathname === '/login' || pathname === '/register' || pathname === '/portal')) {
-        if (role === 'admin') {
-            return NextResponse.redirect(new URL('/admin', request.url))
-        }
-        if (role === 'patient') {
-            return NextResponse.redirect(new URL('/patient/dashboard', request.url))
-        }
+    // 3. Prevent logged-in Patients from seeing Patient Auth pages
+    if (isPatientAuth && (pathname === '/login' || pathname === '/register' || pathname === '/portal')) {
+        return NextResponse.redirect(new URL('/patient/dashboard', request.url))
     }
 
-    // 4. Prevent Admin logged-in users from seeing Admin Login page
-    if (isAuth && pathname === '/admin/login') {
-        if (role === 'admin') {
-            return NextResponse.redirect(new URL('/admin', request.url))
-        }
+    // 4. Prevent logged-in Admins from seeing Admin Login page
+    if (isAdminAuth && pathname === '/admin/login') {
+        return NextResponse.redirect(new URL('/admin', request.url))
     }
 
     return NextResponse.next()

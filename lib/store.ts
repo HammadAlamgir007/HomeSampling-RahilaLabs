@@ -199,7 +199,9 @@ export const useStore = create<StoreState>()(
       getBooking: (id) => get().bookings.find((b) => b.id === id),
       logout: () => {
         set({ user: null, isAuthenticated: false, authToken: null })
-        localStorage.removeItem('rahila-storage')
+        if (typeof window !== "undefined") {
+          sessionStorage.removeItem('rahila-storage')
+        }
       },
       setDarkMode: (dark) => set({ darkMode: dark }),
       setUserRole: (role) => set({ userRole: role }),
@@ -224,7 +226,7 @@ export const useStore = create<StoreState>()(
     }),
     {
       name: "rahila-storage",
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => sessionStorage),
     }
   )
 )

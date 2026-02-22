@@ -74,8 +74,8 @@ export default function LoginPage() {
       setAuthToken(data.data.access_token)
 
       // Store in cookies for Next.js Middleware Edge detection
-      document.cookie = `rahila_token=${data.data.access_token}; path=/; max-age=86400;`
-      document.cookie = `rahila_role=patient; path=/; max-age=86400;`
+      document.cookie = `patient_token=${data.data.access_token}; path=/; max-age=86400;`
+      document.cookie = `patient_role=patient; path=/; max-age=86400;`
 
       router.push("/patient/dashboard")
     } catch (err: any) {

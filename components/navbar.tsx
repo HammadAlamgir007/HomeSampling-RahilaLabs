@@ -71,8 +71,8 @@ export function Navbar() {
                 <Button
                   onClick={() => {
                     logout()
-                    document.cookie = "rahila_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
-                    document.cookie = "rahila_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
+                    document.cookie = "patient_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
+                    document.cookie = "patient_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT"
                     router.push('/')
                   }}
                   variant="ghost"
