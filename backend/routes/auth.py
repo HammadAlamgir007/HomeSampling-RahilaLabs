@@ -132,13 +132,13 @@ def register():
         is_verified=True
     )
     
-    db.session.add(new_user)
     try:
+        db.session.add(new_user)
         db.session.delete(otp_record)
         db.session.commit()
     except Exception as e:
         db.session.rollback()
-        return api_response(False, "Registration failed. Please try again.", status_code=500)
+        return api_response(False, "Registration failed due to a database error. Please try again.", status_code=500)
 
     return api_response(True, "User registered successfully", data={'user': new_user.to_dict()}, status_code=201)
 
@@ -180,10 +180,14 @@ def login():
     if not user.is_verified:
         return api_response(False, "Please verify your account before logging in.", status_code=403)
 
-    # Reset attempts on success
-    user.failed_login_attempts = 0
-    user.locked_until = None
-    db.session.commit()
+    try:
+        # Reset attempts on success
+        user.failed_login_attempts = 0
+        user.locked_until = None
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return api_response(False, "Login failed due to an internal error.", status_code=500)
         
     access_token = create_access_token(identity=str(user.id), additional_claims={'type': 'user'})
     
@@ -234,7 +238,11 @@ def forgot_password():
         new_otp = OTP(email=email, otp_code=otp_code, expires_at=expires_at, purpose='reset_password')
         db.session.add(new_otp)
         
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return api_response(False, "Failed to process forgot password request.", status_code=500)
 
     mail_result = send_email(email, 'Rahila Labs - Password Reset Code', f"Your password reset code is: {otp_code}\n\nThis code will expire in 10 minutes.")
     if mail_result == "simulated":
@@ -282,7 +290,11 @@ def reset_password():
     user.failed_login_attempts = 0
     user.locked_until = None
 
-    db.session.delete(otp_record)
-    db.session.commit()
+    try:
+        db.session.delete(otp_record)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return api_response(False, "Failed to reset password due to an internal error.", status_code=500)
 
     return api_response(True, "Password has been reset successfully. You can now login.", status_code=200)

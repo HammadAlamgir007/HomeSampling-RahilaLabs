@@ -60,8 +60,12 @@ def book_appointment():
         status='pending'
     )
 
-    db.session.add(new_appointment)
-    db.session.commit()
+    try:
+        db.session.add(new_appointment)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Failed to create booking due to database error'}), 500
     
     # Retrieve relations for email
     patient = User.query.get(current_user_id)
@@ -113,10 +117,13 @@ def cancel_booking(booking_id):
     if appointment.status != 'pending':
         return jsonify({'error': 'Cannot cancel a completed or confirmed appointment'}), 400
 
-    db.session.delete(appointment)
-    db.session.commit()
-    
-    return jsonify({'message': 'Appointment cancelled successfully'}), 200
+    try:
+        db.session.delete(appointment)
+        db.session.commit()
+        return jsonify({'message': 'Appointment cancelled successfully'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Failed to cancel appointment due to database error'}), 500
 
 import os
 from flask import send_from_directory, current_app

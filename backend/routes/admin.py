@@ -158,8 +158,11 @@ def update_appointment_status(id):
     if not appointment:
         return jsonify({'error': 'Appointment not found'}), 404
 
-    appointment.status = new_status
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Failed to update status due to a database error.'}), 500
 
     return jsonify({'message': 'Status updated', 'appointment': appointment.to_dict()}), 200
 
@@ -217,8 +220,12 @@ def create_patient():
         status='active'
     )
     
-    db.session.add(new_patient)
-    db.session.commit()
+    try:
+        db.session.add(new_patient)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Failed to create patient due to a database error.'}), 500
     
     return jsonify({'message': 'Patient created successfully', 'user': new_patient.to_dict()}), 201
 
@@ -244,7 +251,11 @@ def update_patient(id):
     if 'city' in data:
         patient.city = data['city']
     
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Failed to update patient due to a database error.'}), 500
     return jsonify({'message': 'Patient updated', 'user': patient.to_dict()}), 200
 
 @admin_bp.route('/appointments/<int:id>', methods=['PUT'])
@@ -273,7 +284,11 @@ def update_appointment(id):
     if 'address' in data:
         appointment.address = data['address']
         
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Failed to update appointment due to a database error.'}), 500
     return jsonify({'message': 'Appointment updated', 'appointment': appointment.to_dict()}), 200
 
 # --- Test Management ---
@@ -304,8 +319,12 @@ def add_test():
         description=data.get('description', ''),
         price=float(data['price'])
     )
-    db.session.add(new_test)
-    db.session.commit()
+    try:
+        db.session.add(new_test)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Failed to add test due to a database error.'}), 500
     return jsonify({'message': 'Test added', 'test': new_test.to_dict()}), 201
 
 @admin_bp.route('/tests/<int:id>', methods=['DELETE'])
@@ -320,8 +339,12 @@ def delete_test(id):
     if not test:
         return jsonify({'error': 'Test not found'}), 404
         
-    db.session.delete(test)
-    db.session.commit()
+    try:
+        db.session.delete(test)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Failed to delete test due to a database error.'}), 500
     return jsonify({'message': 'Test deleted successfully'}), 200
 
 # --- Reports ---
