@@ -152,7 +152,21 @@ def init_db():
             db.session.commit()
             print("Seeded demo riders")
 
+@app.errorhandler(Exception)
+def handle_exception(e):
+    import traceback
+    app.logger.error(f'Unhandled Exception: {str(e)}\n{traceback.format_exc()}')
+    return jsonify({
+        "success": False, 
+        "message": "An unexpected error occurred.", 
+        "error": str(e)
+    }), 500
+
+# Initialize DB (creates tables if they don't exist)
+try:
+    init_db()
+except Exception as e:
+    app.logger.error(f"Error during DB initialization: {e}")
 
 if __name__ == '__main__':
-    init_db()
     app.run(host='0.0.0.0', debug=True, port=5000)
