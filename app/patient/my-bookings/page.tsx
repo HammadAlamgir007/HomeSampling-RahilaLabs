@@ -61,25 +61,24 @@ export default function MyBookingsPage() {
               <p className="text-gray-600 dark:text-slate-400">Track all your test bookings and results</p>
             </div>
 
-            <div className="bg-white dark:bg-slate-900 rounded-lg shadow-lg p-6 mb-8 space-y-4">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 p-6 mb-8 space-y-4">
               <div className="relative">
                 <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                 <Input
                   placeholder="Search by test name or address..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 bg-gray-50 dark:bg-slate-800 border-gray-300 dark:border-slate-700"
+                  className="pl-10 bg-gray-50 dark:bg-slate-800 border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:border-slate-700 rounded-xl"
                 />
               </div>
 
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => setStatusFilter("all")}
-                  className={`px-4 py-2 rounded-lg font-medium transition ${
-                    statusFilter === "all"
+                  className={`px-4 py-2 rounded-xl font-medium transition-all ${statusFilter === "all"
                       ? "bg-blue-900 text-white"
                       : "bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700"
-                  }`}
+                    }`}
                 >
                   All
                 </button>
@@ -87,11 +86,10 @@ export default function MyBookingsPage() {
                   <button
                     key={status}
                     onClick={() => setStatusFilter(status)}
-                    className={`px-4 py-2 rounded-lg font-medium transition ${
-                      statusFilter === status
+                    className={`px-4 py-2 rounded-xl font-medium transition-all ${statusFilter === status
                         ? "bg-blue-900 text-white"
                         : "bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700"
-                    }`}
+                      }`}
                   >
                     {status.charAt(0).toUpperCase() + status.slice(1)}
                   </button>
@@ -135,7 +133,7 @@ export default function MyBookingsPage() {
                 {filteredBookings.map((booking) => (
                   <div
                     key={booking.id}
-                    className="bg-white dark:bg-slate-900 rounded-lg shadow-lg p-6 hover:shadow-xl transition"
+                    className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 p-6 hover:shadow-md hover:-translate-y-1 transition-all duration-300"
                   >
                     <div className="flex justify-between items-start gap-4">
                       <div className="flex-1">

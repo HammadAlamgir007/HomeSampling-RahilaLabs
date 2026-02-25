@@ -275,7 +275,7 @@ export default function BookTestPage() {
                           type="text"
                           value={address.house}
                           onChange={(e) => handleAddressChange("house", e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                          className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none shadow-sm transition-all duration-300"
                           placeholder="e.g. 12-A"
                         />
                       </div>
@@ -285,7 +285,7 @@ export default function BookTestPage() {
                           type="text"
                           value={address.street}
                           onChange={(e) => handleAddressChange("street", e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                          className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none shadow-sm transition-all duration-300"
                           placeholder="e.g. 5 or Main Boulevard"
                         />
                       </div>
@@ -296,7 +296,7 @@ export default function BookTestPage() {
                         type="text"
                         value={address.area}
                         onChange={(e) => handleAddressChange("area", e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                        className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none shadow-sm transition-all duration-300"
                         placeholder="e.g. G-10, Model Town, Bahria Town"
                       />
                     </div>
@@ -306,7 +306,7 @@ export default function BookTestPage() {
                         <select
                           value={address.city}
                           onChange={(e) => handleAddressChange("city", e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                          className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none shadow-sm transition-all duration-300"
                         >
                           <option value="">Select City</option>
                           <option value="Islamabad">Islamabad</option>
@@ -321,7 +321,7 @@ export default function BookTestPage() {
                         <select
                           value={address.state}
                           onChange={(e) => handleAddressChange("state", e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                          className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none shadow-sm transition-all duration-300"
                         >
                           <option value="">Select State</option>
                           {STATES.map((state) => (
@@ -341,7 +341,7 @@ export default function BookTestPage() {
                         maxLength={5}
                         value={address.zipCode}
                         onChange={(e) => handleAddressChange("zipCode", e.target.value.replace(/\D/g, ''))}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                        className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none shadow-sm transition-all duration-300"
                         placeholder="44000"
                       />
                     </div>
@@ -375,7 +375,7 @@ export default function BookTestPage() {
                         min={new Date().toISOString().split('T')[0]}
                         value={schedule.date}
                         onChange={(e) => handleScheduleChange("date", e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                        className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none shadow-sm transition-all duration-300"
                       />
                     </div>
                     <div>
@@ -383,7 +383,7 @@ export default function BookTestPage() {
                       <select
                         value={schedule.time}
                         onChange={(e) => handleScheduleChange("time", e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                        className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none shadow-sm transition-all duration-300"
                       >
                         <option value="">Select Time</option>
                         {TIME_SLOTS.map((slot) => (
@@ -401,7 +401,7 @@ export default function BookTestPage() {
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
                         rows={3}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                        className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none shadow-sm transition-all duration-300"
                         placeholder="Any special instructions..."
                       />
                     </div>

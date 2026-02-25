@@ -5,6 +5,7 @@ import { Footer } from "@/components/footer"
 import { TopHero } from "@/components/top-hero"
 import { TestCard } from "@/components/test-card"
 import { StatCard } from "@/components/stat-card"
+import { Users, ClipboardList, Clock } from "lucide-react"
 
 export default function Home() {
   const tests = [
@@ -45,10 +46,13 @@ export default function Home() {
         <TopHero />
 
         {/* Tests Section */}
-        <section className="py-16 bg-gray-50 dark:bg-slate-900">
+        <section className="py-20 md:py-32 bg-slate-50 dark:bg-slate-900 border-t border-slate-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 className="text-3xl font-bold text-center mb-12 text-gray-900 dark:text-white">Featured Tests</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white mb-4">Featured Health Tests</h2>
+              <p className="text-lg text-slate-600 max-w-2xl mx-auto">Explore our most popular home diagnostic packages designed for comprehensive wellness screening.</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
               {tests.map((test) => (
                 <TestCard key={test.id} {...test} />
               ))}
@@ -57,49 +61,51 @@ export default function Home() {
         </section>
 
         {/* Stats Section */}
-        <section className="py-16 dark:bg-slate-950">
+        <section className="py-20 md:py-24 bg-white dark:bg-slate-950">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 className="text-3xl font-bold text-center mb-12 text-gray-900 dark:text-white">Why Choose Us</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <StatCard number="10K+" label="Happy Patients" />
-              <StatCard number="50+" label="Tests Available" />
-              <StatCard number="24/7" label="Support" />
+            <h2 className="text-3xl md:text-4xl font-extrabold text-center mb-16 text-slate-900 dark:text-white">Why Choose Us</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <StatCard number="10K+" label="Happy Patients" icon={<Users className="w-8 h-8" />} />
+              <StatCard number="50+" label="Tests Available" icon={<ClipboardList className="w-8 h-8" />} />
+              <StatCard number="24/7" label="Support" icon={<Clock className="w-8 h-8" />} />
             </div>
           </div>
         </section>
 
         {/* How It Works */}
-        <section className="py-16 bg-gray-50 dark:bg-slate-900">
+        <section className="py-20 md:py-32 bg-slate-50 dark:bg-slate-900 border-t border-slate-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 className="text-3xl font-bold text-center mb-12 text-gray-900 dark:text-white">How It Works</h2>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="text-center">
-                <div className="bg-blue-900 text-white rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-4 text-lg font-bold">
+            <h2 className="text-3xl md:text-4xl font-extrabold text-center mb-16 text-slate-900 dark:text-white">How It Works</h2>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-12 md:gap-8 relative">
+              {/* Optional connector line hidden for simplicity, but easily addable */}
+
+              <div className="text-center relative">
+                <div className="bg-blue-100 text-blue-600 shadow-sm rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-6 text-xl font-extrabold">
                   1
                 </div>
-                <h3 className="font-bold mb-2 text-gray-900 dark:text-white">Book a Test</h3>
-                <p className="text-gray-600 dark:text-slate-400">Select your test and preferred time</p>
+                <h3 className="font-bold mb-2 text-slate-900 text-xl dark:text-white">Book a Test</h3>
+                <p className="text-slate-600 dark:text-slate-400">Select your test and preferred time slots online.</p>
               </div>
-              <div className="text-center">
-                <div className="bg-blue-900 text-white rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-4 text-lg font-bold">
+              <div className="text-center relative">
+                <div className="bg-blue-100 text-blue-600 shadow-sm rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-6 text-xl font-extrabold">
                   2
                 </div>
-                <h3 className="font-bold mb-2 text-gray-900 dark:text-white">Confirm Address</h3>
-                <p className="text-gray-600 dark:text-slate-400">Provide your home address</p>
+                <h3 className="font-bold mb-2 text-slate-900 text-xl dark:text-white">Confirm Address</h3>
+                <p className="text-slate-600 dark:text-slate-400">Provide your exact home location for the visit.</p>
               </div>
-              <div className="text-center">
-                <div className="bg-blue-900 text-white rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-4 text-lg font-bold">
+              <div className="text-center relative">
+                <div className="bg-blue-100 text-blue-600 shadow-sm rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-6 text-xl font-extrabold">
                   3
                 </div>
-                <h3 className="font-bold mb-2 text-gray-900 dark:text-white">Home Visit</h3>
-                <p className="text-gray-600 dark:text-slate-400">Our technician visits your home</p>
+                <h3 className="font-bold mb-2 text-slate-900 text-xl dark:text-white">Home Visit</h3>
+                <p className="text-slate-600 dark:text-slate-400">Our certified phlebotomist arrives to collect samples.</p>
               </div>
-              <div className="text-center">
-                <div className="bg-blue-900 text-white rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-4 text-lg font-bold">
+              <div className="text-center relative">
+                <div className="bg-blue-100 text-blue-600 shadow-sm rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-6 text-xl font-extrabold">
                   4
                 </div>
-                <h3 className="font-bold mb-2 text-gray-900 dark:text-white">Get Results</h3>
-                <p className="text-gray-600 dark:text-slate-400">Results within 24 hours</p>
+                <h3 className="font-bold mb-2 text-slate-900 text-xl dark:text-white">Get Results</h3>
+                <p className="text-slate-600 dark:text-slate-400">Digital reports are available securely online within 24 hours.</p>
               </div>
             </div>
           </div>

@@ -9,11 +9,15 @@ interface StatCardProps {
 
 export function StatCard({ number, label, icon }: StatCardProps) {
   return (
-    <Card>
+    <Card className="rounded-2xl border-slate-100 shadow-sm hover:shadow-md transition-all duration-300">
       <CardContent className="pt-6">
-        <div className="text-center space-y-2">
-          {icon && <div className="flex justify-center text-blue-900 text-4xl">{icon}</div>}
-          <p className="text-4xl font-bold text-blue-900">{number}</p>
+        <div className="text-center space-y-3">
+          {icon && (
+            <div className="flex justify-center mx-auto items-center w-16 h-16 rounded-full bg-blue-50 text-blue-600 text-3xl mb-4">
+              {icon}
+            </div>
+          )}
+          <p className="text-4xl font-extrabold text-slate-900">{number}</p>
           <p className="text-gray-600">{label}</p>
         </div>
       </CardContent>

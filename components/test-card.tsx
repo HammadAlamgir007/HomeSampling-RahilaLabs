@@ -16,7 +16,7 @@ interface TestCardProps {
 export function TestCard({ id, name, description, price, tests, isSelected, onSelect }: TestCardProps) {
   return (
     <Card
-      className={`cursor-pointer transition-all ${isSelected ? "ring-2 ring-blue-500 shadow-lg" : ""}`}
+      className={`cursor-pointer rounded-2xl border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 ${isSelected ? "ring-2 ring-blue-500 shadow-lg" : ""}`}
       onClick={() => onSelect?.(id)}
     >
       <CardHeader>
@@ -38,7 +38,7 @@ export function TestCard({ id, name, description, price, tests, isSelected, onSe
           </ul>
         </div>
         {onSelect && (
-          <Button className="w-full" variant={isSelected ? "default" : "outline"}>
+          <Button className={`w-full rounded-xl ${isSelected ? "bg-blue-600 hover:bg-blue-700" : ""}`} variant={isSelected ? "default" : "outline"}>
             {isSelected ? "Selected" : "Select Test"}
           </Button>
         )}

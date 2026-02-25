@@ -10,6 +10,7 @@ export interface User {
   phone: string
   dateOfBirth: string
   address: string
+  mrn?: string
 }
 
 export interface Test {

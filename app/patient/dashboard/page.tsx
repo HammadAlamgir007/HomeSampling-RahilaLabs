@@ -9,6 +9,7 @@ import { STATUS_COLORS } from "@/lib/constants"
 import { API_BASE_URL } from "@/lib/api_config"
 
 import { useRouter } from "next/navigation"
+import { ClipboardList, CalendarClock, FileCheck2 } from "lucide-react"
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -119,17 +120,32 @@ export default function DashboardPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-              <div className="bg-white dark:bg-slate-900 dark:border dark:border-slate-800 rounded-lg shadow-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Total Bookings</h3>
-                <p className="text-4xl font-bold text-blue-600">{bookings.length}</p>
+              <div className="bg-white dark:bg-slate-900 dark:border dark:border-slate-800 rounded-2xl shadow-sm hover:shadow-md transition-all p-6 border border-slate-100">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300">Total Bookings</h3>
+                  <div className="p-3 bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-full">
+                    <ClipboardList className="w-6 h-6" />
+                  </div>
+                </div>
+                <p className="text-4xl font-extrabold text-slate-900 dark:text-white">{bookings.length}</p>
               </div>
-              <div className="bg-white dark:bg-slate-900 dark:border dark:border-slate-800 rounded-lg shadow-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Upcoming Tests</h3>
-                <p className="text-4xl font-bold text-yellow-600">{upcomingBookings.length}</p>
+              <div className="bg-white dark:bg-slate-900 dark:border dark:border-slate-800 rounded-2xl shadow-sm hover:shadow-md transition-all p-6 border border-slate-100">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300">Upcoming Tests</h3>
+                  <div className="p-3 bg-yellow-50 dark:bg-yellow-900/40 text-yellow-600 dark:text-yellow-400 rounded-full">
+                    <CalendarClock className="w-6 h-6" />
+                  </div>
+                </div>
+                <p className="text-4xl font-extrabold text-slate-900 dark:text-white">{upcomingBookings.length}</p>
               </div>
-              <div className="bg-white dark:bg-slate-900 dark:border dark:border-slate-800 rounded-lg shadow-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Ready Reports</h3>
-                <p className="text-4xl font-bold text-green-600">
+              <div className="bg-white dark:bg-slate-900 dark:border dark:border-slate-800 rounded-2xl shadow-sm hover:shadow-md transition-all p-6 border border-slate-100">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300">Ready Reports</h3>
+                  <div className="p-3 bg-green-50 dark:bg-green-900/40 text-green-600 dark:text-green-400 rounded-full">
+                    <FileCheck2 className="w-6 h-6" />
+                  </div>
+                </div>
+                <p className="text-4xl font-extrabold text-slate-900 dark:text-white">
                   {bookings.filter((b) => b.status === "ready").length}
                 </p>
               </div>
@@ -156,7 +172,7 @@ export default function DashboardPage() {
               ) : (
                 <div className="space-y-4">
                   {upcomingBookings.map((booking) => (
-                    <div key={booking.id} className="border border-gray-200 dark:border-slate-800 rounded-lg p-4 hover:shadow-md transition bg-slate-50 dark:bg-slate-950/50">
+                    <div key={booking.id} className="border border-slate-100 dark:border-slate-800 rounded-2xl p-6 hover:shadow-md hover:bg-slate-50 transition-all bg-white dark:bg-slate-900/50">
                       <div className="flex justify-between items-start mb-2">
                         <div>
                           <div className="flex items-center gap-2 mb-1">
