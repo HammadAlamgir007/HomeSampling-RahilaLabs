@@ -152,6 +152,7 @@ def login():
         
     email = sanitize_email(data.get('email'))
     password = sanitize_string(data.get('password'))
+    remember_me = data.get('remember_me', False)
 
     if not email or not password:
         return api_response(False, "Missing email or password", status_code=400)
@@ -164,7 +165,7 @@ def login():
     
     # Account locking mechanism
     if user.locked_until and user.locked_until > datetime.utcnow():
-        return api_response(False, "Account locked due to too many failed attempts. Try again later.", status_code=403)
+        return api_response(False, "Too many attempts. Try again in 15 minutes.", status_code=429)
     elif user.locked_until and user.locked_until <= datetime.utcnow():
         user.locked_until = None
         user.failed_login_attempts = 0
@@ -174,11 +175,13 @@ def login():
         user.failed_login_attempts += 1
         if user.failed_login_attempts >= 5:
             user.locked_until = datetime.utcnow() + timedelta(minutes=15)
+            db.session.commit()
+            return api_response(False, "Too many attempts. Try again in 15 minutes.", status_code=429)
         db.session.commit()
-        return api_response(False, "Invalid credentials", status_code=401)
+        return api_response(False, "Invalid email or password", status_code=401)
         
     if not user.is_verified:
-        return api_response(False, "Please verify your account before logging in.", status_code=403)
+        return api_response(False, "Account not verified. Please verify your email.", status_code=403)
 
     try:
         # Reset attempts on success
@@ -189,7 +192,9 @@ def login():
         db.session.rollback()
         return api_response(False, "Login failed due to an internal error.", status_code=500)
         
-    access_token = create_access_token(identity=str(user.id), additional_claims={'type': 'user'})
+    # Configure token expiration
+    expires_delta = timedelta(days=30) if remember_me else None
+    access_token = create_access_token(identity=str(user.id), additional_claims={'type': 'user'}, expires_delta=expires_delta)
     
     response, status = api_response(True, "Login successful", data={
         'user': user.to_dict(),
@@ -197,7 +202,7 @@ def login():
     }, status_code=200)
 
     response_obj = make_response(response)
-    set_access_cookies(response_obj, access_token)
+    set_access_cookies(response_obj, access_token, max_age=(30 * 24 * 60 * 60) if remember_me else None)
     
     return response_obj, status
 

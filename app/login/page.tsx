@@ -1,9 +1,9 @@
 "use client"
 
 import type React from "react"
-import { useState, useRef } from "react"
+import { useState, useRef, Suspense } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useStore } from "@/lib/store"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
@@ -14,7 +14,7 @@ import { PasswordInput } from "@/components/ui/password-input"
 import { SubmitButton } from "@/components/ui/submit-button"
 import { CheckCircle2 } from "lucide-react"
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter()
   const setUser = useStore((state) => state.setUser)
   const setAuthToken = useStore((state) => state.setAuthToken)
@@ -23,6 +23,9 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(false)
+  const [rememberMe, setRememberMe] = useState(false)
+  const searchParams = useSearchParams()
+  const redirectPath = searchParams.get("redirect") || "/patient/dashboard"
 
   const refs = {
     email: useRef<HTMLInputElement>(null),
@@ -56,15 +59,17 @@ export default function LoginPage() {
       const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, remember_me: rememberMe }),
       })
 
       const data = await response.json()
 
-      if (!data.success) {
+      if (!data.success || !response.ok) {
         if (data.field) {
           setErrors({ [data.field]: data.message })
           scrollToFirstError({ [data.field]: data.message })
+        } else {
+          setErrors({ global: data.message })
         }
         throw new Error(data.message || "Login failed")
       }
@@ -74,10 +79,11 @@ export default function LoginPage() {
       setAuthToken(data.data.access_token)
 
       // Store in cookies for Next.js Middleware Edge detection
-      document.cookie = `patient_token=${data.data.access_token}; path=/; max-age=86400;`
-      document.cookie = `patient_role=patient; path=/; max-age=86400;`
+      const maxAgeStr = rememberMe ? "max-age=2592000;" : "" // 30 days or session
+      document.cookie = `patient_token=${data.data.access_token}; path=/; ${maxAgeStr}`
+      document.cookie = `patient_role=patient; path=/; ${maxAgeStr}`
 
-      router.push("/patient/dashboard")
+      router.push(redirectPath)
     } catch (err: any) {
       toast.error(err.message)
     } finally {
@@ -102,9 +108,21 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           <div className="bg-white dark:bg-slate-950 dark:border dark:border-slate-800 rounded-lg shadow-lg p-8">
             <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Welcome Back</h1>
-              <p className="text-gray-600 dark:text-slate-400">Sign in to your Rahila Labs account</p>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                {redirectPath?.includes("book-test") ? "Login to Book Test" : "Welcome Back"}
+              </h1>
+              <p className="text-gray-600 dark:text-slate-400">
+                {redirectPath?.includes("book-test")
+                  ? "Create an account or login to continue booking"
+                  : "Sign in to your Rahila Labs account"}
+              </p>
             </div>
+
+            {errors.global && (
+              <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-sm rounded-lg border border-red-200 dark:border-red-800 flex items-start">
+                <span className="font-semibold block">{errors.global}</span>
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
@@ -134,14 +152,26 @@ export default function LoginPage() {
                 {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
               </div>
 
-              <div className="flex justify-end mt-1">
+              <div className="flex items-center justify-between mt-1">
+                <div className="flex items-center">
+                  <input
+                    id="remember-me"
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-slate-700 rounded bg-white dark:bg-slate-900"
+                  />
+                  <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700 dark:text-slate-300">
+                    Remember me
+                  </label>
+                </div>
                 <Link href="/forgot-password" className="text-sm text-blue-600 hover:underline">
                   Forgot Password?
                 </Link>
               </div>
 
               <SubmitButton isLoading={isLoading} type="submit" className="mt-2">
-                Sign In
+                {isLoading ? "Signing in..." : "Sign In"}
               </SubmitButton>
             </form>
 
@@ -158,5 +188,13 @@ export default function LoginPage() {
       </div>
       <Footer />
     </>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">Loading...</div>}>
+      <LoginContent />
+    </Suspense>
   )
 }

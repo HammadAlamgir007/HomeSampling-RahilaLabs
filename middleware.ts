@@ -21,7 +21,9 @@ export function middleware(request: NextRequest) {
     // 2. Secure Patient Routes
     if (pathname.startsWith('/patient')) {
         if (!isPatientAuth) {
-            return NextResponse.redirect(new URL('/login', request.url))
+            const loginUrl = new URL('/login', request.url)
+            loginUrl.searchParams.set('redirect', pathname)
+            return NextResponse.redirect(loginUrl)
         }
     }
 

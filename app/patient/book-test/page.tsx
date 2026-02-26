@@ -22,6 +22,11 @@ export default function BookTestPage() {
 
   useEffect(() => {
     setHasHydrated(true)
+    const pendingTestId = localStorage.getItem("pending_test")
+    if (pendingTestId) {
+      setSelectedTests([pendingTestId])
+      localStorage.removeItem("pending_test")
+    }
   }, [])
 
   // Fetch tests on load

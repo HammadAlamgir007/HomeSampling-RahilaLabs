@@ -5,9 +5,13 @@ import { Footer } from "@/components/footer"
 import { TopHero } from "@/components/top-hero"
 import { TestCard } from "@/components/test-card"
 import { StatCard } from "@/components/stat-card"
-import { Users, ClipboardList, Clock } from "lucide-react"
+import { Users, ClipboardList, Clock, ArrowRight } from "lucide-react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
 
 export default function Home() {
+  const router = useRouter()
   const tests = [
     {
       id: "1",
@@ -39,6 +43,11 @@ export default function Home() {
     },
   ]
 
+  const handleBookNow = (id: string) => {
+    localStorage.setItem("pending_test", id)
+    router.push("/patient/book-test")
+  }
+
   return (
     <>
       <Navbar />
@@ -54,8 +63,16 @@ export default function Home() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
               {tests.map((test) => (
-                <TestCard key={test.id} {...test} />
+                <TestCard key={test.id} {...test} onSelect={handleBookNow} buttonText="Book Now" />
               ))}
+            </div>
+            <div className="mt-16 text-center">
+              <Link href="/services">
+                <Button size="lg" className="bg-white text-blue-600 border border-blue-200 hover:bg-blue-50 hover:border-blue-300 rounded-full px-8 shadow-sm transition-all hover:-translate-y-0.5 font-semibold font-sans">
+                  View All Services
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </Link>
             </div>
           </div>
         </section>

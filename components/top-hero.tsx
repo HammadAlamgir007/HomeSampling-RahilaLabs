@@ -11,12 +11,13 @@ export function TopHero() {
   return (
     <section className="relative overflow-hidden bg-slate-50 pt-16 md:pt-24 pb-32">
       {/* Background Decorative Gradients */}
-      <div className="absolute top-0 left-1/2 w-full -translate-x-1/2 h-full overflow-hidden -z-10 pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-100/50 blur-3xl" />
-        <div className="absolute bottom-[-10%] right-[-5%] w-[50%] h-[50%] rounded-full bg-blue-200/40 blur-3xl" />
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute top-[0%] left-[-10%] w-[40%] h-[50%] rounded-full bg-blue-400/30 mix-blend-multiply filter blur-[80px] opacity-70 animate-blob" />
+        <div className="absolute top-[-10%] right-[0%] w-[40%] h-[50%] rounded-full bg-cyan-400/30 mix-blend-multiply filter blur-[80px] opacity-70 animate-blob" style={{ animationDelay: "2s" }} />
+        <div className="absolute bottom-[-20%] left-[20%] w-[50%] h-[50%] rounded-full bg-indigo-400/30 mix-blend-multiply filter blur-[80px] opacity-70 animate-blob" style={{ animationDelay: "4s" }} />
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
 
           {/* Left Text Column */}
@@ -26,10 +27,8 @@ export function TopHero() {
               <span>Premium Home Diagnostic Testing</span>
             </div>
 
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 leading-tight tracking-tight">
-              Accurate Diagnostics. <br />
-              <span className="text-blue-600">Trusted Results.</span> <br />
-              Better Health.
+            <h1 className="text-4xl md:text-5xl lg:text-7xl font-extrabold text-slate-900 leading-[1.15] tracking-tight">
+              Accurate Diagnostics. <span className="text-blue-600 block mt-2 mb-2">Trusted Results.</span> Better Health.
             </h1>
 
             <p className="text-lg md:text-xl text-slate-600 max-w-xl">

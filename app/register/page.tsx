@@ -105,7 +105,16 @@ export default function RegisterPage() {
           throw new Error(data.message || "Failed to send OTP")
         }
 
-        toast.success(data.message)
+        toast.success(data.message, { duration: 10000 })
+
+        // Extract simulated OTP for easy testing
+        if (data.message.includes("Simulated:")) {
+          const match = data.message.match(/Simulated:\s*(\d{6})/);
+          if (match && match[1]) {
+            setOtpCode(match[1]);
+          }
+        }
+
         setIsOtpStep(true)
       } catch (err: any) {
         toast.error(err.message)
