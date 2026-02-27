@@ -63,12 +63,9 @@ def send_otp():
 
     mail_result = send_email(email, 'Rahila Labs - Verfication Code', f"Your registration verification code for Rahila Labs is: {otp_code}\n\nThis code will expire in 10 minutes.")
     if mail_result and mail_result != "simulated":
-        # Email sent successfully
         return api_response(True, "OTP sent successfully to your email", status_code=200)
     else:
-        # Email failed or simulated — return OTP in response as fallback
-        # This ensures registration is NEVER blocked by email issues
-        return api_response(True, f"Email unavailable. Use this code to verify: {otp_code}", data={"otp_code": otp_code, "email_sent": False}, status_code=200)
+        return api_response(False, "Failed to send OTP email. Please check your email address and try again.", status_code=500)
 
 
 @auth_bp.route('/register', methods=['POST'])
