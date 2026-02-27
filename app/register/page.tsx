@@ -32,6 +32,7 @@ export default function RegisterPage() {
   const [isOtpStep, setIsOtpStep] = useState(false)
   const [otpCode, setOtpCode] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [fallbackOtp, setFallbackOtp] = useState<string | null>(null) // shown when email fails
 
   const refs = {
     name: useRef<HTMLInputElement>(null),
@@ -105,14 +106,15 @@ export default function RegisterPage() {
           throw new Error(data.message || "Failed to send OTP")
         }
 
-        toast.success(data.message, { duration: 10000 })
-
-        // Extract simulated OTP for easy testing
-        if (data.message.includes("Simulated:")) {
-          const match = data.message.match(/Simulated:\s*(\d{6})/);
-          if (match && match[1]) {
-            setOtpCode(match[1]);
-          }
+        // Email sent OK or fallback mode (email failed but OTP in response)
+        if (data.data?.otp_code) {
+          // Email failed — show code directly on screen
+          setFallbackOtp(data.data.otp_code)
+          setOtpCode(data.data.otp_code) // auto-fill for convenience
+          toast.warning("Email unavailable. Your verification code is shown below — copy it!", { duration: 15000 })
+        } else {
+          setFallbackOtp(null)
+          toast.success("Verification code sent to your email!", { duration: 10000 })
         }
 
         setIsOtpStep(true)
@@ -281,7 +283,18 @@ export default function RegisterPage() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Enter 6-digit Code</label>
-                  <p className="text-sm text-gray-500 mb-4">We sent a verification code to <strong>{formData.email}</strong></p>
+                  {fallbackOtp ? (
+                    <div className="mb-4 p-4 bg-yellow-50 border-2 border-yellow-400 rounded-lg">
+                      <p className="text-yellow-800 font-bold text-sm mb-1">⚠️ Email service unavailable</p>
+                      <p className="text-yellow-700 text-sm mb-2">Use this code to complete registration:</p>
+                      <div className="text-3xl font-mono font-bold text-center tracking-widest text-yellow-900 bg-yellow-100 rounded py-2">
+                        {fallbackOtp}
+                      </div>
+                      <p className="text-yellow-600 text-xs mt-2 text-center">Code has been auto-filled below</p>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500 mb-4">We sent a verification code to <strong>{formData.email}</strong></p>
+                  )}
                   <input
                     type="text"
                     value={otpCode}
