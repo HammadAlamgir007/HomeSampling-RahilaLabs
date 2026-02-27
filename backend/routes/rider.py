@@ -138,7 +138,7 @@ def get_tasks():
     # Get active tasks (accepted onwards — assignment is auto-accepted)
     tasks = Appointment.query.filter(
         Appointment.rider_id == rider_id,
-        Appointment.status.in_(['rider_accepted', 'rider_on_way', 'sample_collected'])
+        Appointment.status.in_(['rider_accepted', 'rider_on_way', 'rider_arrived', 'sample_collected'])
     ).order_by(Appointment.appointment_date.desc()).all()
     
     return jsonify({

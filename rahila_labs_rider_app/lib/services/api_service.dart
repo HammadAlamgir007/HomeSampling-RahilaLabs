@@ -15,9 +15,11 @@ class UnauthorizedException implements Exception {
 }
 
 class ApiService {
-  static const String baseUrl = 'http://localhost:5000/api'; // Web / Chrome
-  // Use 'http://10.0.2.2:5000/api' for Android emulator
-  // Use 'http://192.168.100.28:5000/api' for physical device (replace with your LAN IP)
+  // ── Change this depending on how you're running ──────────────────────────
+  // Chrome / web:          'http://localhost:5000/api'
+  // Physical Android/iOS:  'http://192.168.100.28:5000/api'  ← your LAN IP
+  // Android emulator:      'http://10.0.2.2:5000/api'
+  static const String baseUrl = 'http://192.168.100.28:5000/api';
 
   // ─── Token helpers (delegate to SecureStorageService) ───────────────────────
 

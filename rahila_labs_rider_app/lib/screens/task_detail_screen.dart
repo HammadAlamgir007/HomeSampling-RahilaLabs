@@ -376,8 +376,8 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Sample Collection (for on-way status)
-            if (widget.task.isOnWay) ...[
+            // Sample Collection (available for on-way or arrived status)
+            if (widget.task.isOnWay || widget.task.isArrived) ...[
               Card(
                 elevation: 2,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
