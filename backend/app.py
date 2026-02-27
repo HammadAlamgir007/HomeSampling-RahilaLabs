@@ -6,6 +6,7 @@ from models import db, User, Test, Appointment, Rider
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 import logging
+import os
 from logging.handlers import RotatingFileHandler
 
 app = Flask(__name__)
