@@ -152,6 +152,51 @@ def init_db():
             db.session.commit()
             print("Seeded demo riders")
 
+# ── One-time DB reset endpoint (protected by secret key) ──────────────────────
+@app.route('/api/reset-db')
+def reset_db():
+    """
+    DROP all tables and recreate them fresh.
+    Protected by ?key= query param to prevent accidental triggers.
+    DELETE THIS ROUTE after running it once on production.
+    """
+    secret = request.args.get('key', '')
+    expected = os.environ.get('SECRET_KEY', 'dev-secret-key-change-this')
+    if secret != expected:
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    try:
+        db.drop_all()
+        db.create_all()
+        # Re-seed tests
+        from werkzeug.security import generate_password_hash as gph
+        tests = [
+            Test(name="Complete Blood Count", description="Full blood work analysis", price=1500),
+            Test(name="Thyroid Profile",       description="Thyroid function tests",   price=2000),
+            Test(name="Lipid Profile",         description="Cholesterol and lipid levels", price=1800),
+            Test(name="Liver Function",        description="Liver health assessment", price=2200),
+        ]
+        db.session.bulk_save_objects(tests)
+        # Re-seed admin
+        admin = User(
+            username="admin", email="admin@rahilalabs.com",
+            password_hash=gph("admin123"), role="admin",
+            status="active", is_verified=True
+        )
+        db.session.add(admin)
+        # Re-seed riders
+        riders = [
+            Rider(name="Ahmed Khan",  email="ahmed@rider.com",  phone="03001234567", password_hash=gph("rider123"), availability_status="available"),
+            Rider(name="Hassan Ali",  email="hassan@rider.com", phone="03009876543", password_hash=gph("rider123"), availability_status="available"),
+        ]
+        db.session.bulk_save_objects(riders)
+        db.session.commit()
+        return jsonify({'message': '✅ Database reset and reseeded successfully. Delete this endpoint now!'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+# ─────────────────────────────────────────────────────────────────────────────
+
 @app.errorhandler(Exception)
 def handle_exception(e):
     import traceback
