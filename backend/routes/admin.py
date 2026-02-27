@@ -24,6 +24,84 @@ def login():
 
     return jsonify({'error': 'Invalid credentials or unauthorized'}), 401
 
+# ─── Admin Profile / Settings ────────────────────────────────────────────────
+
+@admin_bp.route('/profile', methods=['GET'])
+@jwt_required()
+def get_admin_profile():
+    current_user_id = int(get_jwt_identity())
+    user = User.query.get(current_user_id)
+    if not user or user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    return jsonify({
+        'id':       user.id,
+        'username': user.username,
+        'email':    user.email,
+        'phone':    user.phone or '',
+        'city':     user.city  or '',
+    }), 200
+
+@admin_bp.route('/profile', methods=['PUT'])
+@jwt_required()
+def update_admin_profile():
+    current_user_id = int(get_jwt_identity())
+    user = User.query.get(current_user_id)
+    if not user or user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    data = request.get_json() or {}
+    if 'username' in data:
+        user.username = data['username'].strip()
+    if 'email' in data:
+        existing = User.query.filter_by(email=data['email']).first()
+        if existing and existing.id != user.id:
+            return jsonify({'error': 'Email already in use'}), 400
+        user.email = data['email'].strip()
+    if 'phone' in data:
+        user.phone = data['phone'].strip()
+    if 'city' in data:
+        user.city = data['city'].strip()
+
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Failed to update profile'}), 500
+
+    return jsonify({'message': 'Profile updated successfully', 'user': user.to_dict()}), 200
+
+@admin_bp.route('/change-password', methods=['PUT'])
+@jwt_required()
+def change_admin_password():
+    from werkzeug.security import generate_password_hash, check_password_hash as chk
+    current_user_id = int(get_jwt_identity())
+    user = User.query.get(current_user_id)
+    if not user or user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    data = request.get_json() or {}
+    current_pw  = data.get('current_password', '')
+    new_pw      = data.get('new_password', '')
+    confirm_pw  = data.get('confirm_password', '')
+
+    if not chk(user.password_hash, current_pw):
+        return jsonify({'error': 'Current password is incorrect'}), 400
+    if len(new_pw) < 6:
+        return jsonify({'error': 'New password must be at least 6 characters'}), 400
+    if new_pw != confirm_pw:
+        return jsonify({'error': 'Passwords do not match'}), 400
+
+    user.password_hash = generate_password_hash(new_pw)
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Failed to update password'}), 500
+
+    return jsonify({'message': 'Password changed successfully'}), 200
+
+# ─────────────────────────────────────────────────────────────────────────────
+
 @admin_bp.route('/stats', methods=['GET'])
 @jwt_required()
 def get_dashboard_stats():
@@ -110,6 +188,53 @@ def get_dashboard_activity():
         })
 
     return jsonify(formatted_activity), 200
+
+@admin_bp.route('/reports', methods=['GET'])
+@jwt_required()
+def get_reports():
+    """Return all appointments that have an uploaded report"""
+    current_user_id = int(get_jwt_identity())
+    user = User.query.get(current_user_id)
+    if not user or user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    search = request.args.get('search', '').strip().lower()
+
+    # Only include appointments that have a report file uploaded
+    appointments = Appointment.query.filter(
+        Appointment.report_path.isnot(None),
+        Appointment.report_path != ''
+    ).order_by(Appointment.created_at.desc()).all()
+
+    result = []
+    for appt in appointments:
+        patient_name = appt.user.username if appt.user else 'Unknown'
+        test_name    = appt.test.name if appt.test else 'Unknown Test'
+
+        # Apply optional search filter
+        if search and search not in patient_name.lower() and search not in test_name.lower():
+            continue
+
+        result.append({
+            'id':               appt.id,
+            'booking_order_id': getattr(appt, 'booking_order_id', None),
+            'patient_id':       appt.user_id,
+            'patient_name':     patient_name,
+            'patient_email':    appt.user.email if appt.user else None,
+            'test_name':        test_name,
+            'test_price':       appt.test.price if appt.test else None,
+            'status':           appt.status,
+            'appointment_date': appt.appointment_date.isoformat() if appt.appointment_date else None,
+            'created_at':       appt.created_at.isoformat() if appt.created_at else None,
+            'report_path':      appt.report_path,
+            'address':          getattr(appt, 'address', None),
+        })
+
+    return jsonify({
+        'reports': result,
+        'total': len(result)
+    }), 200
+
 @admin_bp.route('/appointments', methods=['GET'])
 @jwt_required()
 def get_appointments():
@@ -159,6 +284,7 @@ def update_appointment_status(id):
         return jsonify({'error': 'Appointment not found'}), 404
 
     try:
+        appointment.status = new_status   # ← was missing!
         db.session.commit()
     except Exception as e:
         db.session.rollback()
@@ -189,6 +315,69 @@ def get_patients():
         'current_page': page
     }), 200
 
+@admin_bp.route('/patients/<int:patient_id>', methods=['GET'])
+@jwt_required()
+def get_patient_detail(patient_id):
+    """Get full patient profile + appointment history for admin view"""
+    current_user_id = int(get_jwt_identity())
+    user = User.query.get(current_user_id)
+    if not user or user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    patient = User.query.get(patient_id)
+    if not patient or patient.role != 'patient':
+        return jsonify({'error': 'Patient not found'}), 404
+
+    # Fetch all appointments for this patient, newest first
+    appointments = Appointment.query.filter_by(user_id=patient_id)\
+        .order_by(Appointment.created_at.desc()).all()
+
+    # Build appointment list with test name included
+    appointment_list = []
+    for appt in appointments:
+        appointment_list.append({
+            'id': appt.id,
+            'booking_order_id': getattr(appt, 'booking_order_id', None),
+            'test_name': appt.test.name if appt.test else 'Unknown Test',
+            'test_price': appt.test.price if appt.test else None,
+            'status': appt.status,
+            'appointment_date': appt.appointment_date.isoformat() if appt.appointment_date else None,
+            'address': getattr(appt, 'address', None),
+            'city': getattr(appt, 'city', None),
+            'created_at': appt.created_at.isoformat() if appt.created_at else None,
+            'report_path': getattr(appt, 'report_path', None),
+            'rider_name': appt.rider.name if getattr(appt, 'rider', None) else None,
+        })
+
+    # Summary stats
+    total = len(appointments)
+    pending  = sum(1 for a in appointments if a.status == 'pending')
+    confirmed = sum(1 for a in appointments if a.status == 'confirmed')
+    completed = sum(1 for a in appointments if a.status == 'completed')
+    cancelled = sum(1 for a in appointments if a.status == 'cancelled')
+
+    return jsonify({
+        'patient': {
+            'id': patient.id,
+            'username': patient.username,
+            'email': patient.email,
+            'phone': patient.phone,
+            'city': patient.city,
+            'mrn': getattr(patient, 'mrn', None),
+            'status': patient.status,
+            'is_verified': getattr(patient, 'is_verified', False),
+            'created_at': patient.created_at.isoformat() if getattr(patient, 'created_at', None) else None,
+        },
+        'stats': {
+            'total': total,
+            'pending': pending,
+            'confirmed': confirmed,
+            'completed': completed,
+            'cancelled': cancelled,
+        },
+        'appointments': appointment_list
+    }), 200
+
 @admin_bp.route('/patients', methods=['POST'])
 @jwt_required()
 def create_patient():
@@ -209,6 +398,7 @@ def create_patient():
         return jsonify({'error': 'Email already exists'}), 400
         
     from werkzeug.security import generate_password_hash
+    from utils.identifiers import generate_mrn
     
     new_patient = User(
         username=data['username'],
@@ -217,7 +407,9 @@ def create_patient():
         phone=data['phone'],
         city=data.get('city', ''),
         role='patient',
-        status='active'
+        status='active',
+        is_verified=True,
+        mrn=generate_mrn()
     )
     
     try:
@@ -229,18 +421,29 @@ def create_patient():
     
     return jsonify({'message': 'Patient created successfully', 'user': new_patient.to_dict()}), 201
 
-@admin_bp.route('/patients/<int:id>', methods=['PUT'])
+@admin_bp.route('/patients/<int:id>', methods=['PUT', 'DELETE'])
 @jwt_required()
-def update_patient(id):
+def update_or_delete_patient(id):
     current_user_id = int(get_jwt_identity())
     user = User.query.get(current_user_id)
     if not user or user.role != 'admin':
         return jsonify({'error': 'Unauthorized'}), 403
 
     patient = User.query.get(id)
-    if not patient:
+    if not patient or patient.role != 'patient':
         return jsonify({'error': 'Patient not found'}), 404
         
+    if request.method == 'DELETE':
+        # Delete associated appointments to avoid IntegrityError (Foreign Key constraint)
+        appointments = Appointment.query.filter_by(user_id=id).all()
+        for appt in appointments:
+            db.session.delete(appt)
+            
+        db.session.delete(patient)
+        db.session.commit()
+        return jsonify({'message': 'Patient deleted successfully'}), 200
+
+    # Handle PUT request
     data = request.get_json()
     if 'username' in data:
         patient.username = data['username']
@@ -346,6 +549,37 @@ def delete_test(id):
         db.session.rollback()
         return jsonify({'error': 'Failed to delete test due to a database error.'}), 500
     return jsonify({'message': 'Test deleted successfully'}), 200
+
+@admin_bp.route('/tests/<int:id>', methods=['PUT'])
+@jwt_required()
+def update_test(id):
+    current_user_id = int(get_jwt_identity())
+    user = User.query.get(current_user_id)
+    if not user or user.role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    test = Test.query.get(id)
+    if not test:
+        return jsonify({'error': 'Test not found'}), 404
+
+    data = request.get_json() or {}
+    if 'name' in data and data['name'].strip():
+        test.name = data['name'].strip()
+    if 'price' in data:
+        try:
+            test.price = float(data['price'])
+        except (ValueError, TypeError):
+            return jsonify({'error': 'Price must be a number'}), 400
+    if 'description' in data:
+        test.description = data['description'].strip()
+
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Failed to update test'}), 500
+
+    return jsonify({'message': 'Test updated', 'test': test.to_dict()}), 200
 
 # --- Reports ---
 import os

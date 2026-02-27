@@ -5,7 +5,8 @@ import { useStore } from '@/lib/store'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Plus, MapPin, Phone, Mail, TrendingUp } from 'lucide-react'
+import { Plus, MapPin, Phone, Mail, TrendingUp, Search } from 'lucide-react'
+import { Input } from '@/components/ui/input'
 import Link from 'next/link'
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
 import { AdminNavbar } from "@/components/admin/admin-navbar"
@@ -31,6 +32,7 @@ export default function RidersPage() {
     const [riders, setRiders] = useState<Rider[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
+    const [searchTerm, setSearchTerm] = useState('')
 
     useEffect(() => {
         fetchRiders()
@@ -81,6 +83,13 @@ export default function RidersPage() {
     const getStatusText = (status: string) => {
         return status.charAt(0).toUpperCase() + status.slice(1)
     }
+
+    const filteredRiders = riders.filter(r =>
+        r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        r.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        r.phone.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        r.availability_status.toLowerCase().includes(searchTerm.toLowerCase())
+    )
 
     if (loading) {
         return (
@@ -150,9 +159,22 @@ export default function RidersPage() {
                             </div>
                         )}
 
+                        {/* Search Bar */}
+                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-4">
+                            <div className="relative">
+                                <Search className="absolute left-3 top-2.5 w-5 h-5 text-slate-400" />
+                                <Input
+                                    placeholder="Search by name, email, phone, or status..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="pl-10 bg-slate-50 dark:bg-slate-800 border-0"
+                                />
+                            </div>
+                        </div>
+
                         {/* Riders List */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {riders.map((rider) => (
+                            {filteredRiders.map((rider) => (
                                 <Card key={rider.id} className="hover:shadow-lg transition-shadow bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
                                     <CardHeader>
                                         <div className="flex justify-between items-start">
@@ -218,11 +240,11 @@ export default function RidersPage() {
                         </div>
 
                         {/* Empty State */}
-                        {riders.length === 0 && !loading && (
+                        {filteredRiders.length === 0 && !loading && (
                             <Card className="p-12 text-center bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-                                <CardTitle className="text-xl mb-2">No Riders Found</CardTitle>
+                                <CardTitle className="text-xl mb-2">{searchTerm ? 'No riders match your search' : 'No Riders Found'}</CardTitle>
                                 <CardDescription className="mb-4">
-                                    Get started by adding your first rider
+                                    {searchTerm ? 'Try a different name, email, or phone number.' : 'Get started by adding your first rider'}
                                 </CardDescription>
                                 <Link href="/admin/riders/create">
                                     <Button className="bg-blue-900 hover:bg-blue-800">

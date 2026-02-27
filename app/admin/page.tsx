@@ -7,7 +7,6 @@ import Link from "next/link"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
 import { AdminNavbar } from "@/components/admin/admin-navbar"
 import { StatCardAdmin } from "@/components/admin/stat-card-admin"
-import { AppointmentsTable } from "@/components/admin/appointments-table"
 import { Users, TestTube, FileText, Calendar } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -15,7 +14,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 export default function AdminDashboard() {
   const { authToken } = useStore()
   const [recentActivity, setRecentActivity] = useState<any[]>([])
-  const [appointments, setAppointments] = useState<any[]>([])
   const [stats, setStats] = useState({
     total_patients: 0,
     total_tests: 0,
@@ -52,13 +50,6 @@ export default function AdminDashboard() {
           setRecentActivity(await activityRes.json())
         }
 
-        // Fetch Recent Appointments
-        const appointmentsRes = await fetch(`${API_BASE_URL}/api/admin/appointments`, {
-          headers: { Authorization: `Bearer ${authToken}` }
-        })
-        if (appointmentsRes.ok) {
-          setAppointments(await appointmentsRes.json())
-        }
 
       } catch (error) {
         console.error("Failed to fetch dashboard data")
@@ -114,24 +105,6 @@ export default function AdminDashboard() {
                 changeType="positive"
               />
             </div>
-
-            {/* Appointments Table */}
-            <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-              <CardHeader>
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div>
-                    <CardTitle>Recent Appointments</CardTitle>
-                    <CardDescription>Upcoming and recent bookings</CardDescription>
-                  </div>
-                  <Button className="bg-blue-900 hover:bg-blue-800 w-full md:w-auto">New Appointment</Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <AppointmentsTable appointments={appointments} />
-                </div>
-              </CardContent>
-            </Card>
 
             {/* Recent Activity */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

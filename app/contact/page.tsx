@@ -71,15 +71,15 @@ export default function ContactPage() {
                 <div className="space-y-6">
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-2">Phone</h3>
-                    <p className="text-gray-600">+91 9876543210</p>
+                    <p className="text-gray-600">9221 111 724452</p>
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-2">Email</h3>
-                    <p className="text-gray-600">support@rahilalabs.com</p>
+                    <p className="text-gray-600">info@rahilalabs.com</p>
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-2">Address</h3>
-                    <p className="text-gray-600">New Delhi, India</p>
+                    <p className="text-gray-600">sialkot punjab</p>
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-2">Hours</h3>

@@ -112,7 +112,7 @@ def init_db():
             print("Seeded admin user")
         
         # Seed Demo Patient & Appointment
-        if not User.query.filter_by(role='patient').first():
+        if not User.query.filter_by(email='ali@example.com').first():
             patient = User(username="ali", email="ali@example.com", password_hash=generate_password_hash("password"), role="patient", phone="1234567890", city="Lahore", is_verified=True)
             db.session.add(patient)
             db.session.commit()

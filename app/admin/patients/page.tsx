@@ -10,6 +10,7 @@ import { useStore } from "@/lib/store"
 import { searchItems } from "@/lib/search-utils"
 import { Plus, Search, Edit, Trash2, Eye } from "lucide-react"
 import { API_BASE_URL } from "@/lib/api_config"
+import Link from "next/link"
 
 const mockPatients = [
   { id: "p1", name: "Ali Ahmed", email: "ali@example.com", phone: "03001234567", city: "Karachi", status: "active" },
@@ -111,6 +112,29 @@ export default function PatientsPage() {
     }
   }
 
+  const handleDeletePatient = async (id: string, name: string) => {
+    if (window.confirm(`Are you sure you want to permanently delete patient ${name}?`)) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/admin/patients/${id}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        });
+
+        if (res.ok) {
+          setPatients(patients.filter(p => p.id !== id));
+        } else {
+          const err = await res.json();
+          alert("Failed to delete patient: " + (err.error || "Unknown error"));
+        }
+      } catch (error) {
+        console.error("Failed to delete patient", error);
+        alert("Failed to delete patient");
+      }
+    }
+  };
+
   return (
     <div className="flex">
       <AdminSidebar />
@@ -165,7 +189,11 @@ export default function PatientsPage() {
                           key={patient.id}
                           className="border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800"
                         >
-                          <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">{patient.username}</td>
+                          <td className="px-6 py-4 font-medium text-slate-900 dark:text-white">
+                            <Link href={`/admin/patients/${patient.id}`} className="hover:text-blue-700 dark:hover:text-blue-400 hover:underline cursor-pointer">
+                              {patient.username}
+                            </Link>
+                          </td>
                           <td className="px-6 py-4 text-slate-600 dark:text-slate-400">{patient.email}</td>
                           <td className="px-6 py-4 text-slate-600 dark:text-slate-400">{patient.phone}</td>
                           <td className="px-6 py-4 text-slate-600 dark:text-slate-400">{patient.city}</td>
@@ -180,16 +208,21 @@ export default function PatientsPage() {
                             </span>
                           </td>
                           <td className="px-6 py-4 flex gap-2">
-                            <button className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded">
-                              <Eye className="w-4 h-4 text-slate-600 dark:text-slate-400" />
-                            </button>
+                            <Link href={`/admin/patients/${patient.id}`}>
+                              <button className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded" title="View patient history">
+                                <Eye className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                              </button>
+                            </Link>
                             <button
                               className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded"
                               onClick={() => setEditingPatient(patient)}
                             >
                               <Edit className="w-4 h-4 text-slate-600 dark:text-slate-400" />
                             </button>
-                            <button className="p-2 hover:bg-red-100 dark:hover:bg-red-900 rounded">
+                            <button
+                              className="p-2 hover:bg-red-100 dark:hover:bg-red-900 rounded"
+                              onClick={() => handleDeletePatient(patient.id, patient.username)}
+                            >
                               <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
                             </button>
                           </td>

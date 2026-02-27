@@ -2,7 +2,9 @@ import os
 import sys
 from dotenv import load_dotenv
 
-load_dotenv()
+# Explicitly load .env from the backend directory
+basedir = os.path.abspath(os.path.dirname(__file__))
+load_dotenv(os.path.join(basedir, '.env'))
 
 # Get the base directory
 basedir = os.path.abspath(os.path.dirname(__file__))

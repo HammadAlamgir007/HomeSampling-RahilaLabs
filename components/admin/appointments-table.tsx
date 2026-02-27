@@ -4,7 +4,7 @@ import { useState } from "react"
 import type { Appointment } from "@/lib/store"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Eye, Check, Box, X, Upload, UserPlus } from "lucide-react"
+import { Eye, Check, Box, X, Upload, UserPlus, RefreshCw } from "lucide-react"
 import { useStore } from "@/lib/store"
 import { API_BASE_URL } from "@/lib/api_config"
 
@@ -51,6 +51,20 @@ export function AppointmentsTable({ appointments = [], riders = [], onView, onEd
           return newState
         })
       }
+    }
+  }
+
+  const previewReport = async (reportPath: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/patient/reports/${reportPath}`, {
+        headers: { Authorization: `Bearer ${authToken}` }
+      })
+      if (!res.ok) { alert('Could not load report. Please try again.'); return }
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      window.open(url, '_blank')
+    } catch {
+      alert('Error opening report.')
     }
   }
 
@@ -196,10 +210,14 @@ export function AppointmentsTable({ appointments = [], riders = [], onView, onEd
                     </button>
                   )}
                   <button
-                    onClick={() => onView?.(apt.id)}
-                    className="p-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded"
+                    onClick={() => apt.report_path ? previewReport(apt.report_path) : onView?.(apt.id)}
+                    title={apt.report_path ? "Preview uploaded report" : "View appointment"}
+                    className={`p-2 rounded ${apt.report_path
+                        ? 'hover:bg-blue-100 dark:hover:bg-blue-900 text-blue-600 dark:text-blue-400'
+                        : 'hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400'
+                      }`}
                   >
-                    <Eye className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                    <Eye className="w-4 h-4" />
                   </button>
                   <div className="relative inline-block">
                     <input
@@ -249,10 +267,15 @@ export function AppointmentsTable({ appointments = [], riders = [], onView, onEd
                     />
                     <label
                       htmlFor={`file-${apt.id}`}
-                      title="Upload Report"
-                      className="cursor-pointer p-2 hover:bg-purple-100 text-purple-600 rounded flex items-center justify-center"
+                      title={apt.report_path ? "Re-upload Report (replace existing)" : "Upload Report"}
+                      className={`cursor-pointer p-2 rounded flex items-center justify-center ${apt.report_path
+                          ? 'hover:bg-orange-100 dark:hover:bg-orange-900 text-orange-500 dark:text-orange-400'
+                          : 'hover:bg-purple-100 dark:hover:bg-purple-900 text-purple-600 dark:text-purple-400'
+                        }`}
                     >
-                      <Upload className="w-4 h-4" />
+                      {apt.report_path
+                        ? <RefreshCw className="w-4 h-4" />
+                        : <Upload className="w-4 h-4" />}
                     </label>
                   </div>
                 </div>

@@ -1,41 +1,63 @@
-2026-02-26 00:08:29,206 INFO: Rahila Labs startup [in /home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/app.py:23]
-2026-02-26 00:42:42,246 INFO: Rahila Labs startup [in /home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/app.py:23]
-2026-02-26 00:42:43,204 INFO: Rahila Labs startup [in /home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/app.py:23]
-2026-02-26 16:00:03,603 ERROR: Unhandled Exception: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+2026-02-27 14:31:23,578 ERROR: Error during DB initialization: (pyodbc.IntegrityError) ('23000', "[23000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Violation of UNIQUE KEY constraint 'UQ__user__DF50E7924E7AB468'. Cannot insert duplicate key in object 'dbo.user'. The duplicate key value is (<NULL>). (2627) (SQLExecDirectW); [23000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]The statement has been terminated. (3621)")
+[SQL: INSERT INTO [user] (username, email, password_hash, role, mrn, phone, city, status, is_verified, failed_login_attempts, locked_until, created_at) OUTPUT inserted.id VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)]
+[parameters: ('ali', 'ali@example.com', 'scrypt:32768:8:1$BaUtwxBn7ifRUy6c$66cf00ae8fea47ff5d64e78633a97e80a8f883da32c5dfd23d724488cff7df153e56d6b7336d168bdc534cf0be4c9884c0dbe999a838d6b8fe66ddbb558703e8', 'patient', None, '1234567890', 'Lahore', 'active', 1, 0, None, datetime.datetime(2026, 2, 27, 9, 31, 23, 569699))]
+(Background on this error at: https://sqlalche.me/e/20/gkpj) [in D:\cloned fyp project\Rahila-Labs-website\backend\app.py:169]
+2026-02-27 14:31:26,094 INFO: Rahila Labs startup [in D:\cloned fyp project\Rahila-Labs-website\backend\app.py:23]
+2026-02-27 14:31:26,645 ERROR: Error during DB initialization: (pyodbc.IntegrityError) ('23000', "[23000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Violation of UNIQUE KEY constraint 'UQ__user__DF50E7924E7AB468'. Cannot insert duplicate key in object 'dbo.user'. The duplicate key value is (<NULL>). (2627) (SQLExecDirectW); [23000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]The statement has been terminated. (3621)")
+[SQL: INSERT INTO [user] (username, email, password_hash, role, mrn, phone, city, status, is_verified, failed_login_attempts, locked_until, created_at) OUTPUT inserted.id VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)]
+[parameters: ('ali', 'ali@example.com', 'scrypt:32768:8:1$NDr1epT9B2GlG0y5$b0d433433f2eb0660021d0aeaed77cd191c987ca8b23671e46ed7e8f0bbab3ac689a29a4cd8e622ef60dbd42f0174b3d4bbf27b1daaf38020b593c1fa4580e57', 'patient', None, '1234567890', 'Lahore', 'active', 1, 0, None, datetime.datetime(2026, 2, 27, 9, 31, 26, 638923))]
+(Background on this error at: https://sqlalche.me/e/20/gkpj) [in D:\cloned fyp project\Rahila-Labs-website\backend\app.py:169]
+2026-02-27 14:44:03,431 ERROR: Unhandled Exception: 405 Method Not Allowed: The method is not allowed for the requested URL.
 Traceback (most recent call last):
-  File "/home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/venv/lib/python3.12/site-packages/flask/app.py", line 917, in full_dispatch_request
+  File "C:\Users\shahz\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 917, in full_dispatch_request
     rv = self.dispatch_request()
-         ^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/venv/lib/python3.12/site-packages/flask/app.py", line 891, in dispatch_request
+  File "C:\Users\shahz\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 891, in dispatch_request
     self.raise_routing_exception(req)
-  File "/home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/venv/lib/python3.12/site-packages/flask/app.py", line 500, in raise_routing_exception
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "C:\Users\shahz\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 500, in raise_routing_exception
     raise request.routing_exception  # type: ignore[misc]
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/venv/lib/python3.12/site-packages/flask/ctx.py", line 362, in match_request
+  File "C:\Users\shahz\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\ctx.py", line 362, in match_request
     result = self.url_adapter.match(return_rule=True)  # type: ignore
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/venv/lib/python3.12/site-packages/werkzeug/routing/map.py", line 629, in match
-    raise NotFound() from None
-werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
- [in /home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/app.py:158]
-2026-02-26 16:00:03,625 ERROR: Unhandled Exception: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+  File "C:\Users\shahz\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\routing\map.py", line 624, in match
+    raise MethodNotAllowed(valid_methods=list(e.have_match_for)) from None
+werkzeug.exceptions.MethodNotAllowed: 405 Method Not Allowed: The method is not allowed for the requested URL.
+ [in D:\cloned fyp project\Rahila-Labs-website\backend\app.py:158]
+2026-02-27 14:44:03,574 ERROR: Unhandled Exception: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
 Traceback (most recent call last):
-  File "/home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/venv/lib/python3.12/site-packages/flask/app.py", line 917, in full_dispatch_request
+  File "C:\Users\shahz\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 917, in full_dispatch_request
     rv = self.dispatch_request()
-         ^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/venv/lib/python3.12/site-packages/flask/app.py", line 891, in dispatch_request
+  File "C:\Users\shahz\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 891, in dispatch_request
     self.raise_routing_exception(req)
-  File "/home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/venv/lib/python3.12/site-packages/flask/app.py", line 500, in raise_routing_exception
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "C:\Users\shahz\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 500, in raise_routing_exception
     raise request.routing_exception  # type: ignore[misc]
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/venv/lib/python3.12/site-packages/flask/ctx.py", line 362, in match_request
+  File "C:\Users\shahz\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\ctx.py", line 362, in match_request
     result = self.url_adapter.match(return_rule=True)  # type: ignore
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/venv/lib/python3.12/site-packages/werkzeug/routing/map.py", line 629, in match
+  File "C:\Users\shahz\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\routing\map.py", line 629, in match
     raise NotFound() from None
 werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
- [in /home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/app.py:158]
-2026-02-26 19:41:52,588 INFO: Rahila Labs startup [in /home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/app.py:23]
-2026-02-26 19:42:38,908 INFO: Rahila Labs startup [in /home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/app.py:23]
-2026-02-26 19:57:15,135 INFO: Rahila Labs startup [in /home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/app.py:23]
-2026-02-26 20:54:50,088 INFO: Rahila Labs startup [in /home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/app.py:23]
+ [in D:\cloned fyp project\Rahila-Labs-website\backend\app.py:158]
+2026-02-27 14:44:05,624 INFO: Rahila Labs startup [in D:\cloned fyp project\Rahila-Labs-website\backend\app.py:23]
+2026-02-27 14:44:06,336 ERROR: Error during DB initialization: (pyodbc.IntegrityError) ('23000', "[23000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Violation of UNIQUE KEY constraint 'UQ__user__DF50E7924E7AB468'. Cannot insert duplicate key in object 'dbo.user'. The duplicate key value is (<NULL>). (2627) (SQLExecDirectW); [23000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]The statement has been terminated. (3621)")
+[SQL: INSERT INTO [user] (username, email, password_hash, role, mrn, phone, city, status, is_verified, failed_login_attempts, locked_until, created_at) OUTPUT inserted.id VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)]
+[parameters: ('ali', 'ali@example.com', 'scrypt:32768:8:1$ItC8go5ettPtbPdd$7f90a83fdfc4bd7c78d9faf92fa89e114ad6cf8619cbb10ec4ed8270e39344ad414a64e8c762c0cd9625571f763c6abe2d0031c6575197e1ea8004de71daaad9', 'patient', None, '1234567890', 'Lahore', 'active', 1, 0, None, datetime.datetime(2026, 2, 27, 9, 44, 6, 326391))]
+(Background on this error at: https://sqlalche.me/e/20/gkpj) [in D:\cloned fyp project\Rahila-Labs-website\backend\app.py:169]
+2026-02-27 14:46:21,997 INFO: Rahila Labs startup [in D:\cloned fyp project\Rahila-Labs-website\backend\app.py:23]
+2026-02-27 14:46:22,722 ERROR: Error during DB initialization: (pyodbc.IntegrityError) ('23000', "[23000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Violation of UNIQUE KEY constraint 'UQ__user__DF50E7924E7AB468'. Cannot insert duplicate key in object 'dbo.user'. The duplicate key value is (<NULL>). (2627) (SQLExecDirectW); [23000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]The statement has been terminated. (3621)")
+[SQL: INSERT INTO [user] (username, email, password_hash, role, mrn, phone, city, status, is_verified, failed_login_attempts, locked_until, created_at) OUTPUT inserted.id VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)]
+[parameters: ('ali', 'ali@example.com', 'scrypt:32768:8:1$n2y9dtFuOGlmBQWx$cd4208ed8193352b41a11f6d7392bd29ce1c13cfaeae066fb6391adc8d5a07226ecaeb5bf1a0015925dcc456e5806dc58a67bf7dc8bcb93c0c8129017c178e34', 'patient', None, '1234567890', 'Lahore', 'active', 1, 0, None, datetime.datetime(2026, 2, 27, 9, 46, 22, 715622))]
+(Background on this error at: https://sqlalche.me/e/20/gkpj) [in D:\cloned fyp project\Rahila-Labs-website\backend\app.py:169]
+2026-02-27 14:46:25,014 INFO: Rahila Labs startup [in D:\cloned fyp project\Rahila-Labs-website\backend\app.py:23]
+2026-02-27 14:46:25,374 ERROR: Error during DB initialization: (pyodbc.IntegrityError) ('23000', "[23000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Violation of UNIQUE KEY constraint 'UQ__user__DF50E7924E7AB468'. Cannot insert duplicate key in object 'dbo.user'. The duplicate key value is (<NULL>). (2627) (SQLExecDirectW); [23000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]The statement has been terminated. (3621)")
+[SQL: INSERT INTO [user] (username, email, password_hash, role, mrn, phone, city, status, is_verified, failed_login_attempts, locked_until, created_at) OUTPUT inserted.id VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)]
+[parameters: ('ali', 'ali@example.com', 'scrypt:32768:8:1$9JbV4dXGjcnLgaOF$1dad134e6a246899b7d1a44f0b41d8be4e4162089e8b2de01a8c0b827f064e1af0df76a5a9454bd3fea8f4d4ea5516ac4b0d664cee626c205f8b7df3d2b9490d', 'patient', None, '1234567890', 'Lahore', 'active', 1, 0, None, datetime.datetime(2026, 2, 27, 9, 46, 25, 372564))]
+(Background on this error at: https://sqlalche.me/e/20/gkpj) [in D:\cloned fyp project\Rahila-Labs-website\backend\app.py:169]
+2026-02-27 14:49:33,231 INFO: Rahila Labs startup [in D:\cloned fyp project\Rahila-Labs-website\backend\app.py:23]
+2026-02-27 14:49:34,049 ERROR: Error during DB initialization: (pyodbc.IntegrityError) ('23000', "[23000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Violation of UNIQUE KEY constraint 'UQ__user__DF50E7924E7AB468'. Cannot insert duplicate key in object 'dbo.user'. The duplicate key value is (<NULL>). (2627) (SQLExecDirectW); [23000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]The statement has been terminated. (3621)")
+[SQL: INSERT INTO [user] (username, email, password_hash, role, mrn, phone, city, status, is_verified, failed_login_attempts, locked_until, created_at) OUTPUT inserted.id VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)]
+[parameters: ('ali', 'ali@example.com', 'scrypt:32768:8:1$wv3veJLeA0VEJ3d6$6d05a8bf0be94d5ff328e49abf8f1de7ed0549416f05bb4a97fce312efe26d3ca7649d5c258fdd1ab742145194421925d42da94cff5d8c7cc369efcd173ffd02', 'patient', None, '1234567890', 'Lahore', 'active', 1, 0, None, datetime.datetime(2026, 2, 27, 9, 49, 34, 40157))]
+(Background on this error at: https://sqlalche.me/e/20/gkpj) [in D:\cloned fyp project\Rahila-Labs-website\backend\app.py:169]
+2026-02-27 15:03:52,469 INFO: Rahila Labs startup [in D:\cloned fyp project\Rahila-Labs-website\backend\app.py:23]
+2026-02-27 15:13:51,768 INFO: Rahila Labs startup [in D:\cloned fyp project\Rahila-Labs-website\backend\app.py:23]

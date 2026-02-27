@@ -48,8 +48,8 @@ export default function DashboardPage() {
               status: b.status,
               scheduledDate: new Date(b.date).toLocaleString(),
               address: b.address,
-              report_path: b.report_path,
-              rider: b.rider // Include rider information
+              report_path: b.report_path,  // key field for Ready Reports
+              rider: b.rider
             }))
             setLocalBookings(formatted)
           }
@@ -71,7 +71,6 @@ export default function DashboardPage() {
       })
 
       if (res.ok) {
-        // Remove locally
         setLocalBookings(prev => prev.filter(b => b.id !== bookingId))
         alert("Appointment cancelled successfully.")
       } else {
@@ -84,14 +83,19 @@ export default function DashboardPage() {
     }
   }
 
-  // Use localBookings instead of store bookings for now to ensure reactivity to live data
   const bookings = localBookings
-  const upcomingBookings = bookings.filter((b) => b.status !== "ready")
+
+  // Ready Reports: any booking with an uploaded report_path
+  const readyReports = bookings.filter((b) => b.report_path)
+
+  // Upcoming: exclude completed, cancelled, and anything with a report ready
+  const upcomingBookings = bookings.filter(
+    (b) => b.status !== "ready" && b.status !== "completed" && b.status !== "cancelled"
+  )
 
   // Redirect unauthenticated users
   useEffect(() => {
     if (hasHydrated && (!user || !authToken)) {
-      // Clear stale cookie to prevent middleware redirect loop
       document.cookie = "patient_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
       window.location.href = "/login"
     }
@@ -119,6 +123,7 @@ export default function DashboardPage() {
               </p>
             </div>
 
+            {/* Stat Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
               <div className="bg-white dark:bg-slate-900 dark:border dark:border-slate-800 rounded-2xl shadow-sm hover:shadow-md transition-all p-6 border border-slate-100">
                 <div className="flex items-center justify-between mb-4">
@@ -129,6 +134,7 @@ export default function DashboardPage() {
                 </div>
                 <p className="text-4xl font-extrabold text-slate-900 dark:text-white">{bookings.length}</p>
               </div>
+
               <div className="bg-white dark:bg-slate-900 dark:border dark:border-slate-800 rounded-2xl shadow-sm hover:shadow-md transition-all p-6 border border-slate-100">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300">Upcoming Tests</h3>
@@ -138,6 +144,7 @@ export default function DashboardPage() {
                 </div>
                 <p className="text-4xl font-extrabold text-slate-900 dark:text-white">{upcomingBookings.length}</p>
               </div>
+
               <div className="bg-white dark:bg-slate-900 dark:border dark:border-slate-800 rounded-2xl shadow-sm hover:shadow-md transition-all p-6 border border-slate-100">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300">Ready Reports</h3>
@@ -146,11 +153,12 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <p className="text-4xl font-extrabold text-slate-900 dark:text-white">
-                  {bookings.filter((b) => b.status === "ready").length}
+                  {readyReports.length}
                 </p>
               </div>
             </div>
 
+            {/* Upcoming Appointments */}
             <div className="bg-white dark:bg-slate-900 dark:border dark:border-slate-800 rounded-lg shadow-lg p-8 mb-12">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Upcoming Appointments</h2>
@@ -218,14 +226,14 @@ export default function DashboardPage() {
               )}
             </div>
 
-            {/* Completed / Reports Section */}
+            {/* Your Reports Section */}
             <div className="bg-white dark:bg-slate-900 dark:border dark:border-slate-800 rounded-lg shadow-lg p-8 mb-12">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Your Reports</h2>
-              {bookings.filter(b => b.status === "completed" || b.status === "ready").length === 0 ? (
+              {readyReports.length === 0 ? (
                 <p className="text-gray-600 dark:text-slate-400">No reports available yet.</p>
               ) : (
                 <div className="space-y-4">
-                  {bookings.filter(b => b.status === "completed" || b.status === "ready").map((booking) => (
+                  {readyReports.map((booking) => (
                     <div key={booking.id} className="border border-green-200 dark:border-green-900 rounded-lg p-4 bg-green-50 dark:bg-green-900/20 flex justify-between items-center">
                       <div>
                         <div className="flex items-center gap-2 mb-1">
@@ -240,7 +248,7 @@ export default function DashboardPage() {
                       </div>
                       <div>
                         <a
-                          href={`${API_BASE_URL}/api/patient/reports/${booking.report_path || `report_${booking.id}_file.pdf`}`}
+                          href="#"
                           className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm font-medium inline-block"
                           onClick={(e) => {
                             e.preventDefault();
@@ -259,7 +267,7 @@ export default function DashboardPage() {
                                 a.download = booking.report_path.split('_').slice(2).join('_');
                                 a.click();
                               })
-                              .catch(err => alert("Failed to download report."));
+                              .catch(() => alert("Failed to download report."));
                           }}
                         >
                           Download Report
