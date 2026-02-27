@@ -1,32 +1,52 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/rider.dart';
 import '../models/task.dart';
+import 'secure_storage_service.dart';
+
+/// Exception thrown when the API returns HTTP 401 (expired / invalid token).
+class UnauthorizedException implements Exception {
+  final String message;
+  const UnauthorizedException([this.message = 'Session expired. Please log in again.']);
+  @override
+  String toString() => message;
+}
 
 class ApiService {
-  static const String baseUrl = 'http://192.168.100.28:5000/api'; // Discovered LAN IP
+  static const String baseUrl = 'http://localhost:5000/api'; // Web / Chrome
   // Use 'http://10.0.2.2:5000/api' for Android emulator
-  // Use your actual IP for physical device
+  // Use 'http://192.168.100.28:5000/api' for physical device (replace with your LAN IP)
 
-  Future<String?> getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('token');
+  // ─── Token helpers (delegate to SecureStorageService) ───────────────────────
+
+  Future<String?> getToken() => SecureStorageService.getToken();
+  Future<void> saveToken(String token) => SecureStorageService.saveToken(token);
+  Future<void> clearToken() => SecureStorageService.clearToken();
+
+  // ─── Auth headers ───────────────────────────────────────────────────────────
+
+  Future<Map<String, String>> _authHeaders() async {
+    final token = await getToken();
+    return {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    };
   }
 
-  Future<void> saveToken(String token) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('token', token);
+  // ─── 401 Interceptor ────────────────────────────────────────────────────────
+
+  /// Wraps every HTTP response. Throws [UnauthorizedException] on 401.
+  http.Response _intercept(http.Response response) {
+    if (response.statusCode == 401) {
+      throw const UnauthorizedException();
+    }
+    return response;
   }
 
-  Future<void> clearToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('token');
-  }
+  // ─── Login ──────────────────────────────────────────────────────────────────
 
-  // Login
   Future<Map<String, dynamic>> login(String email, String password) async {
     final response = await http.post(
       Uri.parse('$baseUrl/rider/login'),
@@ -44,14 +64,14 @@ class ApiService {
     }
   }
 
-  // Get Profile
+  // ─── Get Profile ─────────────────────────────────────────────────────────────
+
   Future<Rider> getProfile() async {
-    final token = await getToken();
-    final response = await http.get(
-      Uri.parse('$baseUrl/rider/profile'),
-      headers: {
-        'Authorization': 'Bearer $token',
-      },
+    final response = _intercept(
+      await http.get(
+        Uri.parse('$baseUrl/rider/profile'),
+        headers: await _authHeaders(),
+      ),
     );
 
     if (response.statusCode == 200) {
@@ -61,26 +81,24 @@ class ApiService {
     }
   }
 
-  // Update Profile (location, status)
+  // ─── Update Profile (location / status) ─────────────────────────────────────
+
   Future<void> updateProfile({
     double? latitude,
     double? longitude,
     String? status,
   }) async {
-    final token = await getToken();
     final body = <String, dynamic>{};
-    
     if (latitude != null) body['gps_latitude'] = latitude;
     if (longitude != null) body['gps_longitude'] = longitude;
     if (status != null) body['availability_status'] = status;
 
-    final response = await http.put(
-      Uri.parse('$baseUrl/rider/profile'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode(body),
+    final response = _intercept(
+      await http.put(
+        Uri.parse('$baseUrl/rider/profile'),
+        headers: await _authHeaders(),
+        body: jsonEncode(body),
+      ),
     );
 
     if (response.statusCode != 200) {
@@ -88,103 +106,70 @@ class ApiService {
     }
   }
 
-  // Get Tasks
-  Future<List<Task>> getTasks() async {
-    final token = await getToken();
-    final response = await http.get(
-      Uri.parse('$baseUrl/rider/tasks'),
-      headers: {
-        'Authorization': 'Bearer $token',
-      },
-    );
+  // ─── Tasks ──────────────────────────────────────────────────────────────────
 
-    print('GET /rider/tasks - Status: ${response.statusCode}');
-    print('Response body: ${response.body}');
+  Future<List<Task>> getTasks() async {
+    final response = _intercept(
+      await http.get(
+        Uri.parse('$baseUrl/rider/tasks'),
+        headers: await _authHeaders(),
+      ),
+    );
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      print('Decoded data: $data');
-      final tasks = (data['tasks'] as List)
-          .map((task) => Task.fromJson(task))
-          .toList();
-      print('Parsed ${tasks.length} tasks');
-      return tasks;
+      return (data['tasks'] as List).map((t) => Task.fromJson(t)).toList();
     } else {
       throw Exception('Failed to load tasks');
     }
   }
 
-  // Get Task History
   Future<List<Task>> getTaskHistory() async {
-    final token = await getToken();
-    final response = await http.get(
-      Uri.parse('$baseUrl/rider/tasks/history'),
-      headers: {
-        'Authorization': 'Bearer $token',
-      },
+    final response = _intercept(
+      await http.get(
+        Uri.parse('$baseUrl/rider/tasks/history'),
+        headers: await _authHeaders(),
+      ),
     );
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      final tasks = (data['tasks'] as List)
-          .map((task) => Task.fromJson(task))
-          .toList();
-      return tasks;
+      return (data['tasks'] as List).map((t) => Task.fromJson(t)).toList();
     } else {
       throw Exception('Failed to load history');
     }
   }
 
-  // Accept Task
-  Future<void> acceptTask(int taskId) async {
-    final token = await getToken();
-    final response = await http.put(
-      Uri.parse('$baseUrl/rider/tasks/$taskId/accept'),
-      headers: {
-        'Authorization': 'Bearer $token',
-      },
-    );
-
-    if (response.statusCode != 200) {
-      final error = jsonDecode(response.body);
-      throw Exception(error['msg'] ?? 'Failed to accept task');
-    }
-  }
-
-  // Reject Task
-  Future<void> rejectTask(int taskId, String reason) async {
-    final token = await getToken();
-    final response = await http.put(
-      Uri.parse('$baseUrl/rider/tasks/$taskId/reject'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({'reason': reason}),
-    );
-
-    if (response.statusCode != 200) {
-      final error = jsonDecode(response.body);
-      throw Exception(error['msg'] ?? 'Failed to reject task');
-    }
-  }
-
-  // Mark On Way
+  // ─── Mark On Way ─────────────────────────────────────────────────────────────
   Future<void> markOnWay(int taskId) async {
-    final token = await getToken();
-    final response = await http.put(
-      Uri.parse('$baseUrl/rider/tasks/$taskId/on-way'),
-      headers: {
-        'Authorization': 'Bearer $token',
-      },
+    final response = _intercept(
+      await http.put(
+        Uri.parse('$baseUrl/rider/tasks/$taskId/on-way'),
+        headers: await _authHeaders(),
+      ),
     );
 
     if (response.statusCode != 200) {
       throw Exception('Failed to update status');
     }
+
+    return;
   }
 
-  // Collect Sample
+  Future<void> markArrived(int taskId) async {
+    final response = _intercept(
+      await http.put(
+        Uri.parse('$baseUrl/rider/tasks/$taskId/arrive'),
+        headers: await _authHeaders(),
+      ),
+    );
+
+    if (response.statusCode != 200) {
+      final error = jsonDecode(response.body);
+      throw Exception(error['msg'] ?? 'Failed to mark arrived');
+    }
+  }
+
   Future<void> collectSample({
     required int taskId,
     required XFile photo,
@@ -193,7 +178,7 @@ class ApiService {
     required double longitude,
   }) async {
     final token = await getToken();
-    
+
     var request = http.MultipartRequest(
       'PUT',
       Uri.parse('$baseUrl/rider/tasks/$taskId/collect'),
@@ -203,37 +188,38 @@ class ApiService {
     request.fields['notes'] = notes;
     request.fields['latitude'] = latitude.toString();
     request.fields['longitude'] = longitude.toString();
-    
-    // Provide a valid default filename so the Flask backend secure_filename() doesn't drop it.
-    // Web blobs often have names but no extensions, so we must force a .jpg suffix if missing.
-    final String secureFilename = (photo.name.isNotEmpty && photo.name.contains('.')) 
-        ? photo.name 
+
+    // Ensure a valid filename with extension for Flask's secure_filename()
+    final String secureFilename = (photo.name.isNotEmpty && photo.name.contains('.'))
+        ? photo.name
         : '${photo.name.isNotEmpty ? photo.name : "sample_photo"}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-        
+
     final bytes = await photo.readAsBytes();
     request.files.add(http.MultipartFile.fromBytes(
-      'sample_photo', 
+      'sample_photo',
       bytes,
       filename: secureFilename,
       contentType: MediaType('image', 'jpeg'),
     ));
 
-    final response = await request.send();
+    final streamedResponse = await request.send();
 
-    if (response.statusCode != 200) {
-      final respStr = await response.stream.bytesToString();
-      throw Exception('Failed to collect sample: ${response.statusCode} - $respStr');
+    if (streamedResponse.statusCode == 401) {
+      throw const UnauthorizedException();
+    }
+
+    if (streamedResponse.statusCode != 200) {
+      final respStr = await streamedResponse.stream.bytesToString();
+      throw Exception('Failed to collect sample: ${streamedResponse.statusCode} - $respStr');
     }
   }
 
-  // Deliver Sample
   Future<void> deliverSample(int taskId) async {
-    final token = await getToken();
-    final response = await http.put(
-      Uri.parse('$baseUrl/rider/tasks/$taskId/deliver'),
-      headers: {
-        'Authorization': 'Bearer $token',
-      },
+    final response = _intercept(
+      await http.put(
+        Uri.parse('$baseUrl/rider/tasks/$taskId/deliver'),
+        headers: await _authHeaders(),
+      ),
     );
 
     if (response.statusCode != 200) {

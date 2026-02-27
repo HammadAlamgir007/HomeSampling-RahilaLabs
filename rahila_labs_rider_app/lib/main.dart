@@ -2,18 +2,33 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/rider_provider.dart';
 import 'screens/login_screen.dart';
+import 'services/connectivity_service.dart';
+import 'services/offline_queue_service.dart';
 
-void main() {
-  runApp(const MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialise connectivity detection (Phase 10)
+  await ConnectivityService.instance.initialise();
+
+  // Initialise offline queue and restore any persisted actions (Phase 10)
+  final offlineQueue = OfflineQueueService();
+  await offlineQueue.init();
+
+  runApp(MyApp(offlineQueue: offlineQueue));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final OfflineQueueService offlineQueue;
+  const MyApp({super.key, required this.offlineQueue});
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => RiderProvider(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => RiderProvider()),
+        ChangeNotifierProvider<OfflineQueueService>.value(value: offlineQueue),
+      ],
       child: MaterialApp(
         title: 'Rahila Labs Rider',
         debugShowCheckedModeBanner: false,

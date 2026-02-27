@@ -1,63 +1,70 @@
-2026-02-27 14:31:23,578 ERROR: Error during DB initialization: (pyodbc.IntegrityError) ('23000', "[23000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Violation of UNIQUE KEY constraint 'UQ__user__DF50E7924E7AB468'. Cannot insert duplicate key in object 'dbo.user'. The duplicate key value is (<NULL>). (2627) (SQLExecDirectW); [23000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]The statement has been terminated. (3621)")
-[SQL: INSERT INTO [user] (username, email, password_hash, role, mrn, phone, city, status, is_verified, failed_login_attempts, locked_until, created_at) OUTPUT inserted.id VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)]
-[parameters: ('ali', 'ali@example.com', 'scrypt:32768:8:1$BaUtwxBn7ifRUy6c$66cf00ae8fea47ff5d64e78633a97e80a8f883da32c5dfd23d724488cff7df153e56d6b7336d168bdc534cf0be4c9884c0dbe999a838d6b8fe66ddbb558703e8', 'patient', None, '1234567890', 'Lahore', 'active', 1, 0, None, datetime.datetime(2026, 2, 27, 9, 31, 23, 569699))]
-(Background on this error at: https://sqlalche.me/e/20/gkpj) [in D:\cloned fyp project\Rahila-Labs-website\backend\app.py:169]
-2026-02-27 14:31:26,094 INFO: Rahila Labs startup [in D:\cloned fyp project\Rahila-Labs-website\backend\app.py:23]
-2026-02-27 14:31:26,645 ERROR: Error during DB initialization: (pyodbc.IntegrityError) ('23000', "[23000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Violation of UNIQUE KEY constraint 'UQ__user__DF50E7924E7AB468'. Cannot insert duplicate key in object 'dbo.user'. The duplicate key value is (<NULL>). (2627) (SQLExecDirectW); [23000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]The statement has been terminated. (3621)")
-[SQL: INSERT INTO [user] (username, email, password_hash, role, mrn, phone, city, status, is_verified, failed_login_attempts, locked_until, created_at) OUTPUT inserted.id VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)]
-[parameters: ('ali', 'ali@example.com', 'scrypt:32768:8:1$NDr1epT9B2GlG0y5$b0d433433f2eb0660021d0aeaed77cd191c987ca8b23671e46ed7e8f0bbab3ac689a29a4cd8e622ef60dbd42f0174b3d4bbf27b1daaf38020b593c1fa4580e57', 'patient', None, '1234567890', 'Lahore', 'active', 1, 0, None, datetime.datetime(2026, 2, 27, 9, 31, 26, 638923))]
-(Background on this error at: https://sqlalche.me/e/20/gkpj) [in D:\cloned fyp project\Rahila-Labs-website\backend\app.py:169]
-2026-02-27 14:44:03,431 ERROR: Unhandled Exception: 405 Method Not Allowed: The method is not allowed for the requested URL.
+2026-02-27 21:45:00,533 ERROR: Unhandled Exception: (sqlite3.OperationalError) no such column: appointment.patient_latitude
+[SQL: SELECT appointment.id AS appointment_id, appointment.user_id AS appointment_user_id, appointment.test_id AS appointment_test_id, appointment.appointment_date AS appointment_appointment_date, appointment.booking_order_id AS appointment_booking_order_id, appointment.status AS appointment_status, appointment.address AS appointment_address, appointment.report_path AS appointment_report_path, appointment.rider_id AS appointment_rider_id, appointment.rider_assigned_at AS appointment_rider_assigned_at, appointment.rider_accepted_at AS appointment_rider_accepted_at, appointment.rider_rejected_at AS appointment_rider_rejected_at, appointment.rejection_reason AS appointment_rejection_reason, appointment.patient_latitude AS appointment_patient_latitude, appointment.patient_longitude AS appointment_patient_longitude, appointment.arrived_at AS appointment_arrived_at, appointment.sample_collected_at AS appointment_sample_collected_at, appointment.sample_photo AS appointment_sample_photo, appointment.collection_notes AS appointment_collection_notes, appointment.collection_latitude AS appointment_collection_latitude, appointment.collection_longitude AS appointment_collection_longitude, appointment.delivered_at AS appointment_delivered_at, appointment.pickup_deadline AS appointment_pickup_deadline, appointment.delivery_deadline AS appointment_delivery_deadline, appointment.priority_level AS appointment_priority_level, appointment.created_at AS appointment_created_at 
+FROM appointment ORDER BY appointment.created_at DESC
+ LIMIT ? OFFSET ?]
+[parameters: (5, 0)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
 Traceback (most recent call last):
-  File "C:\Users\shahz\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 917, in full_dispatch_request
-    rv = self.dispatch_request()
-  File "C:\Users\shahz\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 891, in dispatch_request
-    self.raise_routing_exception(req)
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
-  File "C:\Users\shahz\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 500, in raise_routing_exception
-    raise request.routing_exception  # type: ignore[misc]
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\shahz\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\ctx.py", line 362, in match_request
-    result = self.url_adapter.match(return_rule=True)  # type: ignore
-  File "C:\Users\shahz\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\routing\map.py", line 624, in match
-    raise MethodNotAllowed(valid_methods=list(e.have_match_for)) from None
-werkzeug.exceptions.MethodNotAllowed: 405 Method Not Allowed: The method is not allowed for the requested URL.
- [in D:\cloned fyp project\Rahila-Labs-website\backend\app.py:158]
-2026-02-27 14:44:03,574 ERROR: Unhandled Exception: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
+  File "/home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/.venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+sqlite3.OperationalError: no such column: appointment.patient_latitude
+
+The above exception was the direct cause of the following exception:
+
 Traceback (most recent call last):
-  File "C:\Users\shahz\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 917, in full_dispatch_request
+  File "/home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/.venv/lib/python3.12/site-packages/flask/app.py", line 917, in full_dispatch_request
     rv = self.dispatch_request()
-  File "C:\Users\shahz\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 891, in dispatch_request
-    self.raise_routing_exception(req)
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
-  File "C:\Users\shahz\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\app.py", line 500, in raise_routing_exception
-    raise request.routing_exception  # type: ignore[misc]
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\shahz\AppData\Local\Programs\Python\Python313\Lib\site-packages\flask\ctx.py", line 362, in match_request
-    result = self.url_adapter.match(return_rule=True)  # type: ignore
-  File "C:\Users\shahz\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\routing\map.py", line 629, in match
-    raise NotFound() from None
-werkzeug.exceptions.NotFound: 404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.
- [in D:\cloned fyp project\Rahila-Labs-website\backend\app.py:158]
-2026-02-27 14:44:05,624 INFO: Rahila Labs startup [in D:\cloned fyp project\Rahila-Labs-website\backend\app.py:23]
-2026-02-27 14:44:06,336 ERROR: Error during DB initialization: (pyodbc.IntegrityError) ('23000', "[23000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Violation of UNIQUE KEY constraint 'UQ__user__DF50E7924E7AB468'. Cannot insert duplicate key in object 'dbo.user'. The duplicate key value is (<NULL>). (2627) (SQLExecDirectW); [23000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]The statement has been terminated. (3621)")
-[SQL: INSERT INTO [user] (username, email, password_hash, role, mrn, phone, city, status, is_verified, failed_login_attempts, locked_until, created_at) OUTPUT inserted.id VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)]
-[parameters: ('ali', 'ali@example.com', 'scrypt:32768:8:1$ItC8go5ettPtbPdd$7f90a83fdfc4bd7c78d9faf92fa89e114ad6cf8619cbb10ec4ed8270e39344ad414a64e8c762c0cd9625571f763c6abe2d0031c6575197e1ea8004de71daaad9', 'patient', None, '1234567890', 'Lahore', 'active', 1, 0, None, datetime.datetime(2026, 2, 27, 9, 44, 6, 326391))]
-(Background on this error at: https://sqlalche.me/e/20/gkpj) [in D:\cloned fyp project\Rahila-Labs-website\backend\app.py:169]
-2026-02-27 14:46:21,997 INFO: Rahila Labs startup [in D:\cloned fyp project\Rahila-Labs-website\backend\app.py:23]
-2026-02-27 14:46:22,722 ERROR: Error during DB initialization: (pyodbc.IntegrityError) ('23000', "[23000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Violation of UNIQUE KEY constraint 'UQ__user__DF50E7924E7AB468'. Cannot insert duplicate key in object 'dbo.user'. The duplicate key value is (<NULL>). (2627) (SQLExecDirectW); [23000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]The statement has been terminated. (3621)")
-[SQL: INSERT INTO [user] (username, email, password_hash, role, mrn, phone, city, status, is_verified, failed_login_attempts, locked_until, created_at) OUTPUT inserted.id VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)]
-[parameters: ('ali', 'ali@example.com', 'scrypt:32768:8:1$n2y9dtFuOGlmBQWx$cd4208ed8193352b41a11f6d7392bd29ce1c13cfaeae066fb6391adc8d5a07226ecaeb5bf1a0015925dcc456e5806dc58a67bf7dc8bcb93c0c8129017c178e34', 'patient', None, '1234567890', 'Lahore', 'active', 1, 0, None, datetime.datetime(2026, 2, 27, 9, 46, 22, 715622))]
-(Background on this error at: https://sqlalche.me/e/20/gkpj) [in D:\cloned fyp project\Rahila-Labs-website\backend\app.py:169]
-2026-02-27 14:46:25,014 INFO: Rahila Labs startup [in D:\cloned fyp project\Rahila-Labs-website\backend\app.py:23]
-2026-02-27 14:46:25,374 ERROR: Error during DB initialization: (pyodbc.IntegrityError) ('23000', "[23000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Violation of UNIQUE KEY constraint 'UQ__user__DF50E7924E7AB468'. Cannot insert duplicate key in object 'dbo.user'. The duplicate key value is (<NULL>). (2627) (SQLExecDirectW); [23000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]The statement has been terminated. (3621)")
-[SQL: INSERT INTO [user] (username, email, password_hash, role, mrn, phone, city, status, is_verified, failed_login_attempts, locked_until, created_at) OUTPUT inserted.id VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)]
-[parameters: ('ali', 'ali@example.com', 'scrypt:32768:8:1$9JbV4dXGjcnLgaOF$1dad134e6a246899b7d1a44f0b41d8be4e4162089e8b2de01a8c0b827f064e1af0df76a5a9454bd3fea8f4d4ea5516ac4b0d664cee626c205f8b7df3d2b9490d', 'patient', None, '1234567890', 'Lahore', 'active', 1, 0, None, datetime.datetime(2026, 2, 27, 9, 46, 25, 372564))]
-(Background on this error at: https://sqlalche.me/e/20/gkpj) [in D:\cloned fyp project\Rahila-Labs-website\backend\app.py:169]
-2026-02-27 14:49:33,231 INFO: Rahila Labs startup [in D:\cloned fyp project\Rahila-Labs-website\backend\app.py:23]
-2026-02-27 14:49:34,049 ERROR: Error during DB initialization: (pyodbc.IntegrityError) ('23000', "[23000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Violation of UNIQUE KEY constraint 'UQ__user__DF50E7924E7AB468'. Cannot insert duplicate key in object 'dbo.user'. The duplicate key value is (<NULL>). (2627) (SQLExecDirectW); [23000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]The statement has been terminated. (3621)")
-[SQL: INSERT INTO [user] (username, email, password_hash, role, mrn, phone, city, status, is_verified, failed_login_attempts, locked_until, created_at) OUTPUT inserted.id VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)]
-[parameters: ('ali', 'ali@example.com', 'scrypt:32768:8:1$wv3veJLeA0VEJ3d6$6d05a8bf0be94d5ff328e49abf8f1de7ed0549416f05bb4a97fce312efe26d3ca7649d5c258fdd1ab742145194421925d42da94cff5d8c7cc369efcd173ffd02', 'patient', None, '1234567890', 'Lahore', 'active', 1, 0, None, datetime.datetime(2026, 2, 27, 9, 49, 34, 40157))]
-(Background on this error at: https://sqlalche.me/e/20/gkpj) [in D:\cloned fyp project\Rahila-Labs-website\backend\app.py:169]
-2026-02-27 15:03:52,469 INFO: Rahila Labs startup [in D:\cloned fyp project\Rahila-Labs-website\backend\app.py:23]
-2026-02-27 15:13:51,768 INFO: Rahila Labs startup [in D:\cloned fyp project\Rahila-Labs-website\backend\app.py:23]
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/.venv/lib/python3.12/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/.venv/lib/python3.12/site-packages/flask_jwt_extended/view_decorators.py", line 170, in decorator
+    return current_app.ensure_sync(fn)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/routes/admin.py", line 68, in get_dashboard_activity
+    appointments = Appointment.query.order_by(Appointment.created_at.desc()).limit(5).all()
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/.venv/lib/python3.12/site-packages/sqlalchemy/orm/query.py", line 2704, in all
+    return self._iter().all()  # type: ignore
+           ^^^^^^^^^^^^
+  File "/home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/.venv/lib/python3.12/site-packages/sqlalchemy/orm/query.py", line 2857, in _iter
+    result: Union[ScalarResult[_T], Result[_T]] = self.session.execute(
+                                                  ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/.venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2351, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/.venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2249, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/.venv/lib/python3.12/site-packages/sqlalchemy/orm/context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+  File "/home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1419, in execute
+    return meth(
+           ^^^^^
+  File "/home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/.venv/lib/python3.12/site-packages/sqlalchemy/sql/elements.py", line 527, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2363, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/.venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) no such column: appointment.patient_latitude
+[SQL: SELECT appointment.id AS appointment_id, appointment.user_id AS appointment_user_id, appointment.test_id AS appointment_test_id, appointment.appointment_date AS appointment_appointment_date, appointment.booking_order_id AS appointment_booking_order_id, appointment.status AS appointment_status, appointment.address AS appointment_address, appointment.report_path AS appointment_report_path, appointment.rider_id AS appointment_rider_id, appointment.rider_assigned_at AS appointment_rider_assigned_at, appointment.rider_accepted_at AS appointment_rider_accepted_at, appointment.rider_rejected_at AS appointment_rider_rejected_at, appointment.rejection_reason AS appointment_rejection_reason, appointment.patient_latitude AS appointment_patient_latitude, appointment.patient_longitude AS appointment_patient_longitude, appointment.arrived_at AS appointment_arrived_at, appointment.sample_collected_at AS appointment_sample_collected_at, appointment.sample_photo AS appointment_sample_photo, appointment.collection_notes AS appointment_collection_notes, appointment.collection_latitude AS appointment_collection_latitude, appointment.collection_longitude AS appointment_collection_longitude, appointment.delivered_at AS appointment_delivered_at, appointment.pickup_deadline AS appointment_pickup_deadline, appointment.delivery_deadline AS appointment_delivery_deadline, appointment.priority_level AS appointment_priority_level, appointment.created_at AS appointment_created_at 
+FROM appointment ORDER BY appointment.created_at DESC
+ LIMIT ? OFFSET ?]
+[parameters: (5, 0)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+ [in /home/hammad/.gemini/antigravity/scratch/Rahila-Labs-website/backend/app.py:158]

@@ -59,4 +59,37 @@ class LocationService {
   ) {
     return Geolocator.distanceBetween(startLat, startLng, endLat, endLng);
   }
+
+  /// Validates that the rider is within [maxMeters] of the patient location.
+  ///
+  /// Returns `null` if within range (OK to proceed).
+  /// Returns an error message string if out of range.
+  /// Returns `null` if patient coordinates are not set (skips validation gracefully).
+  String? validateGeofence({
+    required double riderLat,
+    required double riderLng,
+    required double? patientLat,
+    required double? patientLng,
+    double maxMeters = 200.0,
+  }) {
+    // If patient location isn't configured, skip geo-fence check
+    if (patientLat == null || patientLng == null) {
+      return null;
+    }
+
+    final distanceMeters = calculateDistance(
+      riderLat, riderLng,
+      patientLat, patientLng,
+    );
+
+    if (distanceMeters > maxMeters) {
+      final distanceStr = distanceMeters >= 1000
+          ? '${(distanceMeters / 1000).toStringAsFixed(1)} km'
+          : '${distanceMeters.toStringAsFixed(0)} m';
+      return 'You are too far from the patient location ($distanceStr away). '
+          'Move within ${maxMeters.toInt()}m to proceed.';
+    }
+
+    return null; // Within range — OK
+  }
 }

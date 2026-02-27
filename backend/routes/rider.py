@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
 from werkzeug.security import check_password_hash
-from models import db, Rider, Appointment
+from models import db, Rider, Appointment, log_task_status_change
 from datetime import datetime
 from utils.file_upload import save_sample_photo, save_rider_photo
 from utils.notifications import (
@@ -14,6 +14,25 @@ from utils.notifications import (
 )
 
 rider_bp = Blueprint('rider', __name__)
+
+
+def _validate_geofence(rider_lat, rider_lng, patient_lat, patient_lng, max_meters=200):
+    """Returns an error message if rider is too far from patient, or None if OK.
+    Skips validation if patient coordinates are not configured."""
+    if not all([rider_lat, rider_lng, patient_lat, patient_lng]):
+        return None  # Can't validate without coordinates, skip
+    import math
+    # Haversine formula
+    R = 6371000  # Earth radius in meters
+    phi1, phi2 = math.radians(float(rider_lat)), math.radians(float(patient_lat))
+    d_phi = math.radians(float(patient_lat) - float(rider_lat))
+    d_lambda = math.radians(float(patient_lng) - float(rider_lng))
+    a = math.sin(d_phi/2)**2 + math.cos(phi1)*math.cos(phi2)*math.sin(d_lambda/2)**2
+    distance_m = R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    if distance_m > max_meters:
+        dist_str = f'{distance_m/1000:.1f}km' if distance_m >= 1000 else f'{distance_m:.0f}m'
+        return f'You are too far from the patient location ({dist_str} away). Move within {max_meters}m to proceed.'
+    return None
 
 @rider_bp.route('/login', methods=['POST'])
 def rider_login():
@@ -116,10 +135,10 @@ def get_tasks():
 
     rider_id = int(get_jwt_identity())
     
-    # Get tasks that are assigned, accepted, on way, or sample collected
+    # Get active tasks (accepted onwards — assignment is auto-accepted)
     tasks = Appointment.query.filter(
         Appointment.rider_id == rider_id,
-        Appointment.status.in_(['assigned_to_rider', 'rider_accepted', 'rider_on_way', 'sample_collected'])
+        Appointment.status.in_(['rider_accepted', 'rider_on_way', 'sample_collected'])
     ).order_by(Appointment.appointment_date.desc()).all()
     
     return jsonify({
@@ -136,95 +155,24 @@ def get_task_history():
 
     rider_id = int(get_jwt_identity())
     
-    # Get completed or rejected tasks
+    # Get completed tasks
     tasks = Appointment.query.filter(
         Appointment.rider_id == rider_id,
-        Appointment.status.in_(['delivered_to_lab', 'completed', 'rider_rejected'])
+        Appointment.status.in_(['delivered_to_lab', 'completed'])
     ).order_by(Appointment.created_at.desc()).limit(50).all()
     
     return jsonify({
         'tasks': [task.to_dict() for task in tasks]
     }), 200
 
-@rider_bp.route('/tasks/<int:task_id>/accept', methods=['PUT'])
-@jwt_required()
-def accept_task(task_id):
-    """Accept assigned task"""
-    claims = get_jwt()
-    if claims.get('type') != 'rider':
-        return jsonify({'msg': 'Unauthorized'}), 403
-
-    rider_id = int(get_jwt_identity())
-    appointment = Appointment.query.get(task_id)
-    
-    if not appointment:
-        return jsonify({'msg': 'Task not found'}), 404
-    
-    if appointment.rider_id != rider_id:
-        return jsonify({'msg': 'This task is not assigned to you'}), 403
-    
-    if appointment.status != 'assigned_to_rider':
-        return jsonify({'msg': 'Task cannot be accepted in current status'}), 400
-    
-    # Update appointment status
-    appointment.status = 'rider_accepted'
-    appointment.rider_accepted_at = datetime.utcnow()
-    
-    # Update rider status to busy
-    rider = Rider.query.get(rider_id)
-    rider.availability_status = 'busy'
-    
-    db.session.commit()
-    
-    return jsonify({
-        'msg': 'Task accepted successfully',
-        'task': appointment.to_dict()
-    }), 200
-
-@rider_bp.route('/tasks/<int:task_id>/reject', methods=['PUT'])
-@jwt_required()
-def reject_task(task_id):
-    """Reject assigned task with reason"""
-    claims = get_jwt()
-    if claims.get('type') != 'rider':
-        return jsonify({'msg': 'Unauthorized'}), 403
-
-    rider_id = int(get_jwt_identity())
-    data = request.get_json()
-    reason = data.get('reason', 'No reason provided')
-    
-    appointment = Appointment.query.get(task_id)
-    
-    if not appointment:
-        return jsonify({'msg': 'Task not found'}), 404
-    
-    if appointment.rider_id != rider_id:
-        return jsonify({'msg': 'This task is not assigned to you'}), 403
-    
-    if appointment.status != 'assigned_to_rider':
-        return jsonify({'msg': 'Task cannot be rejected in current status'}), 400
-    
-    # Update appointment status
-    appointment.status = 'rider_rejected'
-    appointment.rider_rejected_at = datetime.utcnow()
-    appointment.rejection_reason = reason
-    
-    # Notify admin
-    rider = Rider.query.get(rider_id)
-    from utils.notifications import notify_admin_rider_rejected
-    notify_admin_rider_rejected(appointment.id, rider.name, reason)
-    
-    db.session.commit()
-    
-    return jsonify({
-        'msg': 'Task rejected',
-        'task': appointment.to_dict()
-    }), 200
 
 @rider_bp.route('/tasks/<int:task_id>/on-way', methods=['PUT'])
 @jwt_required()
 def mark_on_way(task_id):
-    """Mark rider is on the way"""
+    """Mark rider is on the way. Enforces only one active rider_on_way task per rider.
+    If another task is already rider_on_way, it is reverted to rider_accepted first.
+    Returns 'switched_from_task_id' when a task was reverted.
+    """
     claims = get_jwt()
     if claims.get('type') != 'rider':
         return jsonify({'msg': 'Unauthorized'}), 403
@@ -241,17 +189,107 @@ def mark_on_way(task_id):
     if appointment.status != 'rider_accepted':
         return jsonify({'msg': 'Invalid status transition'}), 400
     
-    # Update status
-    appointment.status = 'rider_on_way'
+    # Enforce only one rider_on_way at a time
+    # Find any existing on-way task for this rider
+    switched_from_task_id = None
+    existing_on_way = Appointment.query.filter(
+        Appointment.rider_id == rider_id,
+        Appointment.status == 'rider_on_way',
+        Appointment.id != task_id
+    ).first()
     
+    if existing_on_way:
+        # Revert the old on-way task back to accepted
+        existing_on_way.status = 'rider_accepted'
+        switched_from_task_id = existing_on_way.id
+        # Audit log — revert
+        log_task_status_change(
+            appointment_id=existing_on_way.id,
+            from_status='rider_on_way',
+            to_status='rider_accepted',
+            changed_by_role='system',
+            rider_id=rider_id,
+            latitude=rider.gps_latitude if rider else None,
+            longitude=rider.gps_longitude if rider else None,
+            metadata={'reason': 'task_switch', 'switched_to_task_id': task_id},
+        )
+
+    # Set new task as on-way
+    appointment.status = 'rider_on_way'
+
     # Notify patient
     rider = Rider.query.get(rider_id)
     notify_patient_rider_on_way(appointment.user_id, appointment.id, rider.name)
-    
+
+    # Audit log
+    log_task_status_change(
+        appointment_id=appointment.id,
+        from_status='rider_accepted',
+        to_status='rider_on_way',
+        changed_by_role='rider',
+        changed_by_id=rider_id,
+        rider_id=rider_id,
+        latitude=rider.gps_latitude,
+        longitude=rider.gps_longitude,
+    )
+
     db.session.commit()
-    
+
     return jsonify({
         'msg': 'Status updated to on way',
+        'task': appointment.to_dict(),
+        'switched_from_task_id': switched_from_task_id
+    }), 200
+
+
+@rider_bp.route('/tasks/<int:task_id>/arrive', methods=['PUT'])
+@jwt_required()
+def mark_arrived(task_id):
+    """Mark rider arrived at patient location. Validates geo-fence (must be within 200m)."""
+    claims = get_jwt()
+    if claims.get('type') != 'rider':
+        return jsonify({'msg': 'Unauthorized'}), 403
+
+    rider_id = int(get_jwt_identity())
+    appointment = Appointment.query.get(task_id)
+    
+    if not appointment:
+        return jsonify({'msg': 'Task not found'}), 404
+    
+    if appointment.rider_id != rider_id:
+        return jsonify({'msg': 'This task is not assigned to you'}), 403
+    
+    if appointment.status != 'rider_on_way':
+        return jsonify({'msg': 'Invalid status transition — must be rider_on_way first'}), 400
+    
+    # Geo-fence validation
+    rider = Rider.query.get(rider_id)
+    geo_error = _validate_geofence(
+        rider.gps_latitude, rider.gps_longitude,
+        appointment.patient_latitude, appointment.patient_longitude
+    )
+    if geo_error:
+        return jsonify({'msg': geo_error, 'error': 'geofence_violation'}), 422
+    
+    appointment.status = 'rider_arrived'
+    appointment.arrived_at = datetime.utcnow()
+
+    # Audit log
+    log_task_status_change(
+        appointment_id=appointment.id,
+        from_status='rider_on_way',
+        to_status='rider_arrived',
+        changed_by_role='rider',
+        changed_by_id=rider_id,
+        rider_id=rider_id,
+        latitude=rider.gps_latitude,
+        longitude=rider.gps_longitude,
+    )
+
+    db.session.commit()
+
+    return jsonify({
+        'msg': 'Marked as arrived at patient location',
         'task': appointment.to_dict()
     }), 200
 
@@ -272,7 +310,7 @@ def collect_sample(task_id):
     if appointment.rider_id != rider_id:
         return jsonify({'msg': 'This task is not assigned to you'}), 403
     
-    if appointment.status != 'rider_on_way':
+    if appointment.status not in ('rider_on_way', 'rider_arrived'):
         return jsonify({'msg': 'Invalid status transition'}), 400
     
     data = request.form
@@ -288,8 +326,11 @@ def collect_sample(task_id):
     else:
         return jsonify({'msg': 'Sample photo is required'}), 400
     
-    # Save collection notes
-    appointment.collection_notes = data.get('notes', '')
+    # Save collection notes — enforce minimum length for compliance (Phase 7.3)
+    notes = (data.get('notes', '') or '').strip()
+    if len(notes) < 5:
+        return jsonify({'msg': 'Collection notes are required (minimum 5 characters).'}), 400
+    appointment.collection_notes = notes
     
     # Save GPS coordinates
     if 'latitude' in data and 'longitude' in data:
@@ -297,16 +338,33 @@ def collect_sample(task_id):
         appointment.collection_longitude = float(data['longitude'])
     
     # Update status and timestamp
+    prev_status = appointment.status
     appointment.status = 'sample_collected'
     appointment.sample_collected_at = datetime.utcnow()
-    
+
     # Notify admin and patient
     rider = Rider.query.get(rider_id)
     notify_admin_sample_collected(appointment.id, rider.name, appointment.user.username)
     notify_patient_sample_collected(appointment.user_id, appointment.id)
-    
+
+    # Audit log
+    log_task_status_change(
+        appointment_id=appointment.id,
+        from_status=prev_status,
+        to_status='sample_collected',
+        changed_by_role='rider',
+        changed_by_id=rider_id,
+        rider_id=rider_id,
+        latitude=appointment.collection_latitude,
+        longitude=appointment.collection_longitude,
+        metadata={
+            'photo_path': appointment.sample_photo,
+            'notes_preview': notes[:80] if notes else None,
+        },
+    )
+
     db.session.commit()
-    
+
     return jsonify({
         'msg': 'Sample collected successfully',
         'task': appointment.to_dict()
@@ -335,19 +393,55 @@ def deliver_to_lab(task_id):
     # Update status
     appointment.status = 'delivered_to_lab'
     appointment.delivered_at = datetime.utcnow()
-    
+
     # Update rider availability
     rider = Rider.query.get(rider_id)
     rider.availability_status = 'available'
-    
+
     # Notify admin
     notify_admin_sample_delivered(appointment.id, rider.name, appointment.user.username)
-    
+
+    # Audit log
+    log_task_status_change(
+        appointment_id=appointment.id,
+        from_status='sample_collected',
+        to_status='delivered_to_lab',
+        changed_by_role='rider',
+        changed_by_id=rider_id,
+        rider_id=rider_id,
+        latitude=rider.gps_latitude,
+        longitude=rider.gps_longitude,
+    )
+
     db.session.commit()
-    
+
     return jsonify({
         'msg': 'Sample delivered to lab successfully',
         'task': appointment.to_dict()
+    }), 200
+
+
+@rider_bp.route('/tasks/<int:task_id>/logs', methods=['GET'])
+@jwt_required()
+def get_task_logs(task_id):
+    """GET audit log for a specific task (Phase 8.3 — optional endpoint)."""
+    claims = get_jwt()
+    if claims.get('type') not in ('rider', 'admin'):
+        return jsonify({'msg': 'Unauthorized'}), 403
+
+    rider_id = int(get_jwt_identity())
+    appointment = Appointment.query.get(task_id)
+
+    if not appointment:
+        return jsonify({'msg': 'Task not found'}), 404
+
+    # Riders can only see logs for their own tasks
+    if claims.get('type') == 'rider' and appointment.rider_id != rider_id:
+        return jsonify({'msg': 'Access denied'}), 403
+
+    return jsonify({
+        'task_id': task_id,
+        'logs': [log.to_dict() for log in appointment.logs]
     }), 200
 
 @rider_bp.route('/notifications', methods=['GET'])

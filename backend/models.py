@@ -87,7 +87,7 @@ class Rider(db.Model):
             ).count()
             pending_tasks = Appointment.query.filter(
                 Appointment.rider_id == self.id,
-                Appointment.status.in_(['assigned_to_rider', 'rider_accepted', 'rider_on_way', 'sample_collected'])
+                Appointment.status.in_(['rider_accepted', 'rider_on_way', 'rider_arrived', 'sample_collected'])
             ).count()
             
             data['stats'] = {
@@ -119,7 +119,7 @@ class Appointment(db.Model):
     
     booking_order_id = db.Column(db.String(50), unique=True, nullable=True)
     
-    # Status: pending, assigned_to_rider, rider_accepted, rider_rejected, rider_on_way, sample_collected, delivered_to_lab, completed
+    # Status: pending, rider_accepted, rider_on_way, rider_arrived, sample_collected, delivered_to_lab, completed
     status = db.Column(db.String(30), default='pending')
     address = db.Column(db.String(200), nullable=False)
     report_path = db.Column(db.String(255))  # Path to uploaded PDF
@@ -130,6 +130,13 @@ class Appointment(db.Model):
     rider_accepted_at = db.Column(db.DateTime)
     rider_rejected_at = db.Column(db.DateTime)
     rejection_reason = db.Column(db.String(200))
+
+    # Patient location (for geo-fencing validation)
+    patient_latitude = db.Column(db.Float, nullable=True)
+    patient_longitude = db.Column(db.Float, nullable=True)
+    
+    # Arrival tracking
+    arrived_at = db.Column(db.DateTime)
     
     # Sample collection fields
     sample_collected_at = db.Column(db.DateTime)
@@ -140,7 +147,12 @@ class Appointment(db.Model):
     
     # Delivery tracking
     delivered_at = db.Column(db.DateTime)
-    
+
+    # SLA fields
+    pickup_deadline = db.Column(db.DateTime, nullable=True)    # Rider must arrive by this time
+    delivery_deadline = db.Column(db.DateTime, nullable=True)  # Sample must reach lab by this time
+    priority_level = db.Column(db.String(20), default='normal')  # normal, urgent, critical
+
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relationships
@@ -164,12 +176,17 @@ class Appointment(db.Model):
             'date': self.appointment_date.isoformat(),
             'status': self.status,
             'address': self.address,
+            'patient_latitude': self.patient_latitude,
+            'patient_longitude': self.patient_longitude,
             'report_path': self.report_path,
             'created_at': self.created_at.isoformat(),
             'sample_photo': self.sample_photo,
             'collection_notes': self.collection_notes,
             'sample_collected_at': self.sample_collected_at.isoformat() if self.sample_collected_at else None,
             'delivered_at': self.delivered_at.isoformat() if self.delivered_at else None,
+            'pickup_deadline': self.pickup_deadline.isoformat() if self.pickup_deadline else None,
+            'delivery_deadline': self.delivery_deadline.isoformat() if self.delivery_deadline else None,
+            'priority_level': self.priority_level,
         }
         
         if include_rider and self.rider:
@@ -187,6 +204,79 @@ class Appointment(db.Model):
             data['rider_accepted_at'] = self.rider_accepted_at.isoformat() if self.rider_accepted_at else None
         
         return data
+
+class TaskLog(db.Model):
+    """Immutable audit trail of every task status transition."""
+    __tablename__ = 'task_log'
+
+    id = db.Column(db.Integer, primary_key=True)
+    appointment_id = db.Column(db.Integer, db.ForeignKey('appointment.id'), nullable=False, index=True)
+    rider_id = db.Column(db.Integer, db.ForeignKey('rider.id'), nullable=True)
+
+    # Status transition
+    from_status = db.Column(db.String(30), nullable=True)   # null for very first assignment
+    to_status = db.Column(db.String(30), nullable=False)
+
+    # Who triggered the change
+    changed_by_role = db.Column(db.String(20), nullable=False)  # 'rider' | 'admin' | 'system'
+    changed_by_id = db.Column(db.Integer, nullable=True)        # rider/user id
+
+    # Rider GPS at time of change (for geo-audit)
+    latitude = db.Column(db.Float, nullable=True)
+    longitude = db.Column(db.Float, nullable=True)
+
+    # Free-form metadata (JSON string — notes, photo path, etc.)
+    log_meta = db.Column(db.Text, nullable=True)  # 'metadata' is reserved by SQLAlchemy
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    appointment = db.relationship('Appointment', backref=db.backref('logs', lazy=True, order_by='TaskLog.created_at'))
+    rider = db.relationship('Rider', backref=db.backref('task_logs', lazy=True))
+
+    def to_dict(self):
+        import json as _json
+        return {
+            'id': self.id,
+            'appointment_id': self.appointment_id,
+            'rider_id': self.rider_id,
+            'from_status': self.from_status,
+            'to_status': self.to_status,
+            'changed_by_role': self.changed_by_role,
+            'changed_by_id': self.changed_by_id,
+            'latitude': self.latitude,
+            'longitude': self.longitude,
+            'metadata': _json.loads(self.log_meta) if self.log_meta else None,
+            'created_at': self.created_at.isoformat(),
+        }
+
+
+def log_task_status_change(
+    appointment_id,
+    from_status,
+    to_status,
+    changed_by_role,
+    changed_by_id=None,
+    rider_id=None,
+    latitude=None,
+    longitude=None,
+    metadata=None,
+):
+    """Convenience function: create and add a TaskLog entry (caller must commit)."""
+    import json as _json
+    entry = TaskLog(
+        appointment_id=appointment_id,
+        rider_id=rider_id,
+        from_status=from_status,
+        to_status=to_status,
+        changed_by_role=changed_by_role,
+        changed_by_id=changed_by_id,
+        latitude=latitude,
+        longitude=longitude,
+        log_meta=_json.dumps(metadata) if metadata else None,
+    )
+    db.session.add(entry)
+
 
 class Notification(db.Model):
     id = db.Column(db.Integer, primary_key=True)

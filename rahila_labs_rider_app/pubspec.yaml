@@ -41,12 +41,11 @@ dependencies:
   # State Management
   provider: ^6.1.1
   
-  # Storage
-  shared_preferences: ^2.2.2
+  # Storage (secure encrypted storage for JWT)
+  flutter_secure_storage: ^9.2.4
   
-  # Location & Maps
+  # Location
   geolocator: ^11.0.0
-  google_maps_flutter: ^2.5.0
   
   # Camera & Images
   image_picker: ^1.0.7
@@ -56,6 +55,13 @@ dependencies:
   url_launcher: ^6.2.4
   permission_handler: ^11.2.0
   http_parser: ^4.1.2
+
+  # Offline support
+  connectivity_plus: ^6.0.3
+  shared_preferences: ^2.3.2
+
+  # Maps
+  google_maps_flutter: ^2.6.0
 
 dev_dependencies:
   flutter_test:

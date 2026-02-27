@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
 from werkzeug.security import check_password_hash
 from datetime import datetime
-from models import db, User, Appointment, Test, Rider
+from models import db, User, Appointment, Test, Rider, log_task_status_change
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -886,20 +886,61 @@ def assign_rider(appointment_id):
     if rider.availability_status != 'available':
         return jsonify({'error': 'Rider is not available'}), 400
     
-    # Assign rider
-    appointment.rider_id = rider_id
-    appointment.status = 'assigned_to_rider'
-    appointment.rider_assigned_at = datetime.utcnow()
+    # Store patient GPS coordinates for geo-fence validation (optional)
+    if 'patient_lat' in data and 'patient_lng' in data:
+        appointment.patient_latitude = float(data['patient_lat'])
+        appointment.patient_longitude = float(data['patient_lng'])
+
+    # SLA fields (optional — auto-default if not provided)
+    from datetime import timedelta
+    now = datetime.utcnow()
+    if 'pickup_deadline' in data:
+        appointment.pickup_deadline = datetime.fromisoformat(data['pickup_deadline'])
+    else:
+        # Default: rider must arrive within 1 hour of assignment
+        appointment.pickup_deadline = now + timedelta(hours=1)
+
+    if 'delivery_deadline' in data:
+        appointment.delivery_deadline = datetime.fromisoformat(data['delivery_deadline'])
+    else:
+        # Default: sample must reach lab within 4 hours of assignment
+        appointment.delivery_deadline = now + timedelta(hours=4)
+
+    appointment.priority_level = data.get('priority_level', 'normal')
     
-    # Notify rider
+    # Auto-accept: task is mandatory, no rider confirmation needed
+    appointment.rider_id = rider_id
+    appointment.status = 'rider_accepted'
+    appointment.rider_assigned_at = datetime.utcnow()
+    appointment.rider_accepted_at = datetime.utcnow()
+    
+    # Mark rider as busy immediately
+    rider.availability_status = 'busy'
+    
+    # Notify rider and patient
     from utils.notifications import notify_rider_assignment, notify_patient_rider_assigned
     notify_rider_assignment(rider_id, appointment_id, appointment.user.username, appointment.address)
     notify_patient_rider_assigned(appointment.user_id, appointment_id, rider.name)
-    
+
+    # Audit log — task created/assigned
+    log_task_status_change(
+        appointment_id=appointment_id,
+        from_status=None,
+        to_status='rider_accepted',
+        changed_by_role='admin',
+        changed_by_id=current_user_id,
+        rider_id=rider_id,
+        metadata={
+            'priority_level': appointment.priority_level,
+            'pickup_deadline': appointment.pickup_deadline.isoformat() if appointment.pickup_deadline else None,
+            'delivery_deadline': appointment.delivery_deadline.isoformat() if appointment.delivery_deadline else None,
+        },
+    )
+
     db.session.commit()
     
     return jsonify({
-        'message': 'Rider assigned successfully',
+        'message': 'Rider assigned and task auto-accepted',
         'appointment': appointment.to_dict()
     }), 200
 
@@ -936,11 +977,14 @@ def reassign_rider(appointment_id):
         if old_rider and old_rider.availability_status == 'busy':
             old_rider.availability_status = 'available'
     
-    # Reassign
+    # Auto-accept: task is mandatory for new rider
     appointment.rider_id = new_rider_id
-    appointment.status = 'assigned_to_rider'
+    appointment.status = 'rider_accepted'
     appointment.rider_assigned_at = datetime.utcnow()
-    appointment.rider_accepted_at = None
+    appointment.rider_accepted_at = datetime.utcnow()
+    
+    # Mark new rider as busy
+    new_rider.availability_status = 'busy'
     
     # Notify new rider
     from utils.notifications import notify_rider_assignment
@@ -949,7 +993,7 @@ def reassign_rider(appointment_id):
     db.session.commit()
     
     return jsonify({
-        'message': 'Rider reassigned successfully',
+        'message': 'Rider reassigned and task auto-accepted',
         'appointment': appointment.to_dict()
     }), 200
 
