@@ -1,34 +1,88 @@
 node_modules/
-backend/venv/
-backend/env/
 .next/
 out/
 build/
+.DS_Store
+Thumbs.db
+
+# ── Dependency lockfile (pick ONE — keep pnpm-lock.yaml, ignore npm) ──────────
+package-lock.json
+
+# ── Build artifacts (JS/TS) ────────────────────────────────────────────────────
+tsconfig.tsbuildinfo
+dist/
+
+# ── Flutter / Dart ─────────────────────────────────────────────────────────────
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+*.g.dart
+doc/api/
+
+# ── Android build outputs ──────────────────────────────────────────────────────
+**/android/app/build/
+**/android/.gradle/
+**/android/local.properties
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# ── Java ──────────────────────────────────────────────────────────────────────
+*.class
+*.jar
+
+# ── Python ────────────────────────────────────────────────────────────────────
 __pycache__/
 *.py[cod]
 *$py.class
-instance/
 .pytest_cache/
 .coverage
 htmlcov/
-.env
-.env.local
-.vscode/
-.idea/
-.DS_Store
-Thumbs.db
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 
-# Python Virtual Environments
-backend/.venv/
-.venv/
+# ── Python virtual environments ───────────────────────────────────────────────
 venv/
 env/
 ENV/
+.venv/
+backend/venv/
+backend/.venv/
+backend/env/
 
-# Python Local Logs and Uploads
-backend/backend_log*
+# ── Databases (NEVER commit database files) ────────────────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+instance/
+
+# ── Uploads & generated files ─────────────────────────────────────────────────
 backend/uploads/
+uploads/
+
+# ── Log files ─────────────────────────────────────────────────────────────────
 *.log
+*.log.*
+backend/backend_log*
+backend_log*
+run_log.txt
+startup_error.txt
+
+# ── Environment files ─────────────────────────────────────────────────────────
+.env
+.env.local
+.env*.local
+
+# ── IDE / Editor ──────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── npm debug logs ────────────────────────────────────────────────────────────
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
