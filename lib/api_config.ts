@@ -1,1 +1,3 @@
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+/** Backward-compatible barrel — real config lives in config/api.ts */
+export { API_BASE_URL } from '@/config/api'
+

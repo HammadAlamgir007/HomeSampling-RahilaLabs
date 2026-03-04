@@ -1,6 +1,2 @@
-import { clsx, type ClassValue } from 'clsx'
-import { twMerge } from 'tailwind-merge'
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
-}
+/** Backward-compatible barrel — real utility lives in utils/index.ts */
+export { cn } from '@/utils'
