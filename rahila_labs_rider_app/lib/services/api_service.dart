@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import '../models/rider.dart';
 import '../models/task.dart';
 import 'secure_storage_service.dart';
+import 'notification_service.dart';
 
 /// Exception thrown when the API returns HTTP 401 (expired / invalid token).
 class UnauthorizedException implements Exception {
@@ -18,7 +19,6 @@ class ApiService {
   // ── Change this depending on how you're running ──────────────────────────
   // Chrome / web:          'http://localhost:5000/api'
   // Physical Android/iOS:  'http://192.168.100.28:5000/api'  ← your LAN IP
-  // Android emulator:      'http://10.0.2.2:5000/api'
   static const String baseUrl = 'http://192.168.100.28:5000/api';
 
   // ─── Token helpers (delegate to SecureStorageService) ───────────────────────
@@ -215,6 +215,40 @@ class ApiService {
       throw Exception('Failed to collect sample: ${streamedResponse.statusCode} - $respStr');
     }
   }
+
+  // ─── Notifications ──────────────────────────────────────────────────────────
+
+  Future<List<RiderNotification>> getNotifications({bool unreadOnly = false}) async {
+    final response = _intercept(
+      await http.get(
+        Uri.parse('$baseUrl/rider/notifications${unreadOnly ? "?unread_only=true" : ""}'),
+        headers: await _authHeaders(),
+      ),
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return (data['notifications'] as List)
+          .map((n) => RiderNotification.fromJson(n))
+          .toList();
+    }
+    return [];
+  }
+
+  Future<void> markNotificationRead(int notificationId) async {
+    await http.put(
+      Uri.parse('$baseUrl/rider/notifications/$notificationId/read'),
+      headers: await _authHeaders(),
+    );
+  }
+
+  Future<void> markAllNotificationsRead() async {
+    await http.put(
+      Uri.parse('$baseUrl/rider/notifications/read-all'),
+      headers: await _authHeaders(),
+    );
+  }
+
+  // ─── Deliver Sample ─────────────────────────────────────────────────────────
 
   Future<void> deliverSample(int taskId) async {
     final response = _intercept(

@@ -4,6 +4,7 @@ import 'providers/rider_provider.dart';
 import 'screens/login_screen.dart';
 import 'services/connectivity_service.dart';
 import 'services/offline_queue_service.dart';
+import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,6 +15,9 @@ void main() async {
   // Initialise offline queue and restore any persisted actions (Phase 10)
   final offlineQueue = OfflineQueueService();
   await offlineQueue.init();
+
+  // Initialise local notification plugin
+  await NotificationService().init();
 
   runApp(MyApp(offlineQueue: offlineQueue));
 }

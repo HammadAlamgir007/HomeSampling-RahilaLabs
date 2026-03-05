@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { TopHero } from "@/components/top-hero"
@@ -9,39 +10,26 @@ import { Users, ClipboardList, Clock, ArrowRight } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import { API_BASE_URL } from "@/lib/api_config"
 
 export default function Home() {
   const router = useRouter()
-  const tests = [
-    {
-      id: "1",
-      name: "Complete Blood Count",
-      description: "Full blood work analysis",
-      price: 1500,
-      tests: ["RBC", "WBC", "Hemoglobin", "Platelet Count"],
-    },
-    {
-      id: "2",
-      name: "Thyroid Profile",
-      description: "Thyroid function tests",
-      price: 2000,
-      tests: ["TSH", "Free T3", "Free T4"],
-    },
-    {
-      id: "3",
-      name: "Lipid Profile",
-      description: "Cholesterol and lipid levels",
-      price: 1800,
-      tests: ["Total Cholesterol", "LDL", "HDL", "Triglycerides"],
-    },
-    {
-      id: "4",
-      name: "Liver Function",
-      description: "Liver health assessment",
-      price: 2200,
-      tests: ["ALT", "AST", "Bilirubin", "Albumin"],
-    },
-  ]
+  const [tests, setTests] = useState<any[]>([])
+
+  useEffect(() => {
+    const fetchTests = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/patient/tests`)
+        if (res.ok) {
+          const data = await res.json()
+          setTests(data.slice(0, 8)) // Get 8 featured tests
+        }
+      } catch (error) {
+        console.error("Failed to fetch featured tests", error)
+      }
+    }
+    fetchTests()
+  }, [])
 
   const handleBookNow = (id: string) => {
     localStorage.setItem("pending_test", id)
@@ -62,9 +50,22 @@ export default function Home() {
               <p className="text-lg text-slate-600 max-w-2xl mx-auto">Explore our most popular home diagnostic packages designed for comprehensive wellness screening.</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {tests.map((test) => (
-                <TestCard key={test.id} {...test} onSelect={handleBookNow} buttonText="Book Now" />
-              ))}
+              {tests.length === 0 ? (
+                <div className="col-span-4 text-center text-slate-500">Loading featured health tests...</div>
+              ) : (
+                tests.map((test) => (
+                  <TestCard
+                    key={test.id}
+                    id={test.id}
+                    name={test.name}
+                    description={test.description}
+                    price={test.price}
+                    tests={[test.specimen, test.reporting_time].filter(Boolean)}
+                    onSelect={handleBookNow}
+                    buttonText="Book Now"
+                  />
+                ))
+              )}
             </div>
             <div className="mt-16 text-center">
               <Link href="/services">

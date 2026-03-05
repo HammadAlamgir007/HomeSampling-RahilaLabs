@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useStore } from "@/lib/store"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
@@ -8,22 +8,54 @@ import TestCard from "@/components/test-card"
 import Link from "next/link"
 import { Search } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { API_BASE_URL } from "@/lib/api_config"
 
 export default function ServicesPage() {
   const user = useStore((state) => state.user)
-  const tests = useStore((state) => state.tests)
+  const [tests, setTests] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState("")
+  const [loading, setLoading] = useState(true)
   const router = useRouter()
+
+  useEffect(() => {
+    const fetchTests = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/patient/tests`)
+        if (res.ok) {
+          const data = await res.json()
+          setTests(data)
+        }
+      } catch (error) {
+        console.error("Failed to fetch tests", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchTests()
+  }, [])
 
   const handleBookNow = (id: string) => {
     localStorage.setItem("pending_test", id)
     router.push("/patient/book-test")
   }
 
-  const filteredTests = tests.filter(test =>
-    test.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    test.description.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const filteredTests = useMemo(() => {
+    return tests.filter(test =>
+      test.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (test.description || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (test.code || "").toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  }, [tests, searchQuery])
+
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 20
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery])
+
+  const totalPages = Math.ceil(filteredTests.length / itemsPerPage)
+  const currentTests = filteredTests.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 
   return (
     <>
@@ -40,47 +72,103 @@ export default function ServicesPage() {
               Comprehensive health testing at your doorstep. We offer a wide range of laboratory tests to help you stay ahead of your health.
             </p>
 
-            {/* Search Bar */}
-            <div className="max-w-2xl mx-auto mt-10 relative group">
-              <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-                <Search className="h-6 w-6 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
-              </div>
-              <input
-                type="text"
-                placeholder="Search for blood tests, profiles, e.g. 'Thyroid'"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-14 pr-6 py-5 bg-white border-2 border-transparent rounded-2xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all shadow-2xl text-lg"
-              />
-            </div>
           </div>
         </div>
 
         {/* Tests Grid */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
 
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
             <h2 className="text-2xl font-bold text-slate-800">
-              {filteredTests.length} {filteredTests.length === 1 ? 'Test' : 'Tests'} Available
+              {loading ? "Loading tests..." : `${tests.length} ${tests.length === 1 ? 'Test' : 'Tests'} Available`}
             </h2>
+
+            {/* Smaller Search Bar aligned with the list */}
+            <div className="relative w-full md:w-[350px] group">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                <Search className="h-4 w-4 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search tests safely..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm font-medium text-sm"
+              />
+            </div>
           </div>
 
           {filteredTests.length > 0 ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-              {filteredTests.map((test) => (
-                <TestCard
-                  key={test.id}
-                  id={test.id}
-                  name={test.name}
-                  description={test.description}
-                  price={test.price}
-                  tests={[test.sampleType, test.turnaroundTime]}
-                  onSelect={handleBookNow}
-                  buttonText="Book Now"
-                />
-              ))}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm whitespace-nowrap">
+                  <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
+                    <tr>
+                      <th className="px-6 py-4">Sr.#</th>
+                      <th className="px-6 py-4">Code</th>
+                      <th className="px-6 py-4 w-full">Test Name</th>
+                      <th className="px-6 py-4">Category</th>
+                      <th className="px-6 py-4">Specimen</th>
+                      <th className="px-6 py-4">Reporting Time</th>
+                      <th className="px-6 py-4">Charges</th>
+                      <th className="px-6 py-4 text-center">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {currentTests.map((test, index) => (
+                      <tr key={test.id} className="hover:bg-blue-50/50 transition-colors">
+                        <td className="px-6 py-4 text-slate-500">{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                        <td className="px-6 py-4 font-mono text-slate-500">{test.code || '—'}</td>
+                        <td className="px-6 py-4 font-bold text-slate-900 whitespace-normal min-w-[200px]">
+                          {test.name}
+                          {test.description && <p className="text-xs text-slate-500 font-normal mt-1">{test.description}</p>}
+                        </td>
+                        <td className="px-6 py-4">
+                          {test.category ? <span className="bg-blue-100 text-blue-700 px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider">{test.category}</span> : '—'}
+                        </td>
+                        <td className="px-6 py-4 text-slate-600 truncate max-w-[150px]" title={test.specimen}>{test.specimen || '—'}</td>
+                        <td className="px-6 py-4 text-slate-600">{test.reporting_time || '—'}</td>
+                        <td className="px-6 py-4 font-bold text-blue-700">Rs. {test.price}</td>
+                        <td className="px-6 py-4 text-center">
+                          <button
+                            onClick={() => handleBookNow(test.id)}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition shadow-sm"
+                          >
+                            Book
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between border-t border-slate-200 bg-slate-50 px-6 py-4 gap-4">
+                  <span className="text-sm text-slate-600">
+                    Showing <span className="font-bold">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-bold">{Math.min(currentPage * itemsPerPage, filteredTests.length)}</span> of <span className="font-bold">{filteredTests.length}</span> tests
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition"
+                    >
+                      Previous
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className="px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
-          ) : (
+          ) : !loading && (
             <div className="text-center py-20 bg-white rounded-3xl border border-slate-100 shadow-sm">
               <Search className="h-12 w-12 text-slate-300 mx-auto mb-4" />
               <h3 className="text-xl font-bold text-slate-800 mb-2">No tests found</h3>

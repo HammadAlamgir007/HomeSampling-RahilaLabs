@@ -281,7 +281,15 @@ def deliver_to_lab(task_id):
     appointment.delivered_at = datetime.utcnow()
 
     rider = Rider.query.get(rider_id)
-    rider.availability_status = 'available'
+    # Only set rider available if they have NO other active tasks remaining
+    remaining_active = Appointment.query.filter(
+        Appointment.rider_id == rider_id,
+        Appointment.status.in_(['rider_accepted', 'rider_on_way', 'rider_arrived', 'sample_collected']),
+        Appointment.id != task_id,
+    ).count()
+    if remaining_active == 0:
+        rider.availability_status = 'available'
+
     notify_admin_sample_delivered(appointment.id, rider.name, appointment.user.username)
 
     log_task_status_change(
@@ -332,3 +340,14 @@ def mark_notification_as_read(notification_id):
     if success:
         return jsonify({'msg': 'Notification marked as read'}), 200
     return jsonify({'msg': 'Notification not found'}), 404
+
+
+@rider_bp.route('/notifications/read-all', methods=['PUT'])
+@jwt_required()
+def mark_all_notifications_read():
+    rider_id, err = _require_rider()
+    if err:
+        return err
+    from app.utils.notifications import mark_all_read
+    mark_all_read(rider_id=rider_id)
+    return jsonify({'msg': 'All notifications marked as read'}), 200

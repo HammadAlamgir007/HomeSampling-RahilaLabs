@@ -5,8 +5,10 @@ import '../models/task.dart';
 import 'task_detail_screen.dart';
 import 'history_screen.dart';
 import 'profile_screen.dart';
+import 'notifications_screen.dart';
 import '../widgets/sla_badge.dart';
 import '../widgets/offline_banner.dart';
+import '../services/notification_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -23,7 +25,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<RiderProvider>(context, listen: false).loadTasks();
+      // Start polling for notifications (every 30s)
+      NotificationService().startPolling(intervalSeconds: 30);
     });
+  }
+
+  @override
+  void dispose() {
+    NotificationService().stopPolling();
+    super.dispose();
   }
 
   @override
@@ -38,6 +48,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       appBar: AppBar(
         title: const Text('Rider Dashboard'),
         actions: [
+          const NotificationBellIcon(),
           Consumer<RiderProvider>(
             builder: (context, provider, child) {
               return PopupMenuButton<String>(

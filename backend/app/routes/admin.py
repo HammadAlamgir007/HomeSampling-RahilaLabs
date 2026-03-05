@@ -456,7 +456,18 @@ def add_test():
     if err:
         return err
     data = request.get_json()
-    new_test = Test(name=data['name'], description=data.get('description', ''), price=float(data['price']))
+    if not data or not data.get('name') or not data.get('price'):
+        return jsonify({'error': 'Name and price are required'}), 400
+
+    new_test = Test(
+        name=data['name'],
+        code=data.get('code', ''),
+        category=data.get('category', ''),
+        description=data.get('description', ''),
+        specimen=data.get('specimen', ''),
+        reporting_time=data.get('reporting_time', ''),
+        price=float(data['price'])
+    )
     try:
         db.session.add(new_test)
         db.session.commit()
@@ -674,8 +685,8 @@ def assign_rider(appointment_id):
     rider = Rider.query.get(rider_id)
     if not rider:
         return jsonify({'error': 'Rider not found'}), 404
-    if rider.availability_status != 'available':
-        return jsonify({'error': 'Rider is not available'}), 400
+    if rider.availability_status == 'offline':
+        return jsonify({'error': 'Rider is offline and cannot receive tasks'}), 400
 
     if 'patient_lat' in data and 'patient_lng' in data:
         appointment.patient_latitude = float(data['patient_lat'])
@@ -698,7 +709,8 @@ def assign_rider(appointment_id):
     appointment.status = 'rider_accepted'
     appointment.rider_assigned_at = now
     appointment.rider_accepted_at = now
-    rider.availability_status = 'busy'
+    if rider.availability_status == 'available':
+        rider.availability_status = 'busy'
 
     notify_rider_assignment(rider_id, appointment_id, appointment.user.username, appointment.address)
     notify_patient_rider_assigned(appointment.user_id, appointment_id, rider.name)
@@ -732,18 +744,27 @@ def reassign_rider(appointment_id):
     new_rider = Rider.query.get(new_rider_id)
     if not new_rider:
         return jsonify({'error': 'Rider not found'}), 404
-    if new_rider.availability_status != 'available':
-        return jsonify({'error': 'Rider is not available'}), 400
+    if new_rider.availability_status == 'offline':
+        return jsonify({'error': 'Rider is offline and cannot receive tasks'}), 400
+    _ACTIVE_STATUSES = ['rider_accepted', 'rider_on_way', 'rider_arrived', 'sample_collected']
     if appointment.rider_id:
         old_rider = Rider.query.get(appointment.rider_id)
-        if old_rider and old_rider.availability_status == 'busy':
-            old_rider.availability_status = 'available'
+        if old_rider:
+            # Only free old rider if they have no other active tasks
+            remaining = Appointment.query.filter(
+                Appointment.rider_id == old_rider.id,
+                Appointment.status.in_(_ACTIVE_STATUSES),
+                Appointment.id != appointment_id,
+            ).count()
+            if remaining == 0:
+                old_rider.availability_status = 'available'
     now = datetime.datetime.utcnow()
     appointment.rider_id = new_rider_id
     appointment.status = 'rider_accepted'
     appointment.rider_assigned_at = now
     appointment.rider_accepted_at = now
-    new_rider.availability_status = 'busy'
+    if new_rider.availability_status == 'available':
+        new_rider.availability_status = 'busy'
     notify_rider_assignment(new_rider_id, appointment_id, appointment.user.username, appointment.address)
     db.session.commit()
     return jsonify({'message': 'Rider reassigned and task auto-accepted', 'appointment': appointment.to_dict()}), 200
@@ -771,4 +792,27 @@ def get_rider_tracking(appointment_id):
         },
         'patient_address': appointment.address,
         'status': appointment.status,
+    }), 200
+
+
+@admin_bp.route('/riders/<int:rider_id>/active-tasks', methods=['GET'])
+@jwt_required()
+def get_rider_active_tasks(rider_id):
+    """Return all currently active (non-completed) tasks for a given rider."""
+    user, err = _require_admin()
+    if err:
+        return err
+    rider = Rider.query.get(rider_id)
+    if not rider:
+        return jsonify({'error': 'Rider not found'}), 404
+    active_statuses = ['rider_accepted', 'rider_on_way', 'rider_arrived', 'sample_collected']
+    tasks = Appointment.query.filter(
+        Appointment.rider_id == rider_id,
+        Appointment.status.in_(active_statuses),
+    ).order_by(Appointment.appointment_date.asc()).all()
+    return jsonify({
+        'rider_id': rider_id,
+        'rider_name': rider.name,
+        'active_task_count': len(tasks),
+        'tasks': [t.to_dict() for t in tasks],
     }), 200
