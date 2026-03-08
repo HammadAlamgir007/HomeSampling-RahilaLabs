@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { Mail, Phone, MapPin, Facebook, Twitter, Instagram, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { toast } from "react-toastify"
 
 export function Footer() {
   return (
@@ -79,7 +80,7 @@ export function Footer() {
           <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800">
             <h4 className="font-bold text-white mb-3">Have a Question?</h4>
             <p className="text-sm text-slate-400 mb-4">Send us a quick message and our support team will reach out.</p>
-            <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); alert('Message sent!'); }}>
+            <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); toast.success('Message sent!'); }}>
               <input
                 type="email"
                 placeholder="Your email address"

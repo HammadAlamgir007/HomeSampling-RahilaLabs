@@ -9,6 +9,7 @@ import { useStore } from "@/lib/store"
 import { API_BASE_URL } from "@/lib/api_config"
 import { Search, FileText, Download, Eye, User, Calendar, TestTube } from "lucide-react"
 import Link from "next/link"
+import { toast } from "react-toastify"
 
 interface Report {
   id: number
@@ -97,7 +98,7 @@ export default function ReportsPage() {
       a.click()
       window.URL.revokeObjectURL(url)
     } catch (err) {
-      alert("Could not download report. Please try again.")
+      toast.error("Could not download report. Please try again.")
     }
   }
 
@@ -111,7 +112,7 @@ export default function ReportsPage() {
       const url = window.URL.createObjectURL(blob)
       window.open(url, "_blank")
     } catch {
-      alert("Could not preview report.")
+      toast.error("Could not preview report.")
     }
   }
 

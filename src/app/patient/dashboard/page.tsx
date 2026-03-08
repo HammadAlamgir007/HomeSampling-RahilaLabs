@@ -9,6 +9,7 @@ import { STATUS_COLORS } from "@/lib/constants"
 import { API_BASE_URL } from "@/lib/api_config"
 
 import { useRouter } from "next/navigation"
+import { toast } from "react-toastify"
 import { ClipboardList, CalendarClock, FileCheck2 } from "lucide-react"
 
 export default function DashboardPage() {
@@ -72,14 +73,14 @@ export default function DashboardPage() {
 
       if (res.ok) {
         setLocalBookings(prev => prev.filter(b => b.id !== bookingId))
-        alert("Appointment cancelled successfully.")
+        toast.success("Appointment cancelled successfully.")
       } else {
         const err = await res.json()
-        alert(err.error || "Failed to cancel")
+        toast.error(err.error || "Failed to cancel")
       }
     } catch (error) {
       console.error("Cancel error:", error)
-      alert("Failed to cancel appointment")
+      toast.error("Failed to cancel appointment")
     }
   }
 
@@ -252,7 +253,7 @@ export default function DashboardPage() {
                           className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm font-medium inline-block"
                           onClick={(e) => {
                             e.preventDefault();
-                            if (!booking.report_path) { alert("Report generating..."); return; }
+                            if (!booking.report_path) { toast.info("Report generating..."); return; }
                             fetch(`${API_BASE_URL}/api/patient/reports/${booking.report_path}`, {
                               headers: { Authorization: `Bearer ${authToken}` }
                             })
@@ -267,7 +268,7 @@ export default function DashboardPage() {
                                 a.download = booking.report_path.split('_').slice(2).join('_');
                                 a.click();
                               })
-                              .catch(() => alert("Failed to download report."));
+                              .catch(() => toast.error("Failed to download report."));
                           }}
                         >
                           Download Report

@@ -7,7 +7,7 @@ import Link from "next/link"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import BookingStepper from "@/components/booking-stepper"
-import { toast } from "sonner"
+import { toast } from "react-toastify"
 import { TIME_SLOTS, STATES } from "@/lib/constants"
 import { API_BASE_URL } from "@/lib/api_config"
 import { Search, Filter, CheckCircle2 } from "lucide-react"
@@ -117,7 +117,7 @@ export default function BookTestPage() {
     if (isSubmitting) return;
 
     if (selectedTests.length === 0 || !address.house || !address.street || !address.city || !schedule.date || !schedule.time) {
-      alert("Please fill in all required fields")
+      toast.error("Please fill in all required fields")
       return
     }
 
@@ -138,7 +138,7 @@ export default function BookTestPage() {
     const appointmentDate = new Date(`${schedule.date}T${time24}:00`).toISOString();
 
     if (!authToken) {
-      alert("Session expired. Please log in again.");
+      toast.error("Session expired. Please log in again.");
       router.push("/login");
       return;
     }
@@ -171,7 +171,7 @@ export default function BookTestPage() {
           <p>Booking confirmed successfully!</p>
           <p className="text-sm opacity-90 mt-1">Order IDs: {orderIds.join(', ')}</p>
         </div>,
-        { duration: 5000 }
+        { autoClose: 5000 }
       );
 
       if (emailSent) toast.success("Confirmation email sent successfully!");
@@ -247,8 +247,8 @@ export default function BookTestPage() {
                               key={test.id}
                               onClick={() => handleSelectTest(test.id)}
                               className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 flex gap-4 ${isSelected
-                                  ? "border-blue-600 bg-blue-50/50 dark:bg-blue-900/20"
-                                  : "border-slate-100 hover:border-blue-200 hover:shadow-md dark:border-slate-800 dark:hover:border-slate-700"
+                                ? "border-blue-600 bg-blue-50/50 dark:bg-blue-900/20"
+                                : "border-slate-100 hover:border-blue-200 hover:shadow-md dark:border-slate-800 dark:hover:border-slate-700"
                                 }`}
                             >
                               <div className="pt-1">
@@ -446,8 +446,8 @@ export default function BookTestPage() {
                             key={slot}
                             onClick={() => handleScheduleChange("time", slot)}
                             className={`p-3 text-center rounded-xl border-2 cursor-pointer transition ${schedule.time === slot
-                                ? "border-blue-600 bg-blue-50 text-blue-700 font-bold dark:bg-blue-900/40 dark:text-blue-300"
-                                : "border-slate-200 text-slate-600 hover:border-blue-300 dark:border-slate-700 dark:text-slate-400"
+                              ? "border-blue-600 bg-blue-50 text-blue-700 font-bold dark:bg-blue-900/40 dark:text-blue-300"
+                              : "border-slate-200 text-slate-600 hover:border-blue-300 dark:border-slate-700 dark:text-slate-400"
                               }`}
                           >
                             {slot}

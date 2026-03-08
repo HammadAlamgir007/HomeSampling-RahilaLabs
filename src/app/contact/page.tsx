@@ -6,7 +6,7 @@ import { useState } from "react"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import { API_BASE_URL } from "@/lib/api_config"
-import { toast } from "sonner"
+import { toast } from "react-toastify"
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({

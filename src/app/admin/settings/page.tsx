@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Bell, Lock, Users, HardDrive, LogOut, Save, Eye, EyeOff, CheckCircle, AlertCircle } from 'lucide-react'
+import { toast as reactToast } from 'react-toastify'
 import { AdminNavbar } from '@/components/admin/admin-navbar'
 import { AdminSidebar } from '@/components/admin/admin-sidebar'
 import { useStore } from '@/lib/store'
@@ -17,7 +18,6 @@ interface Toast { message: string; type: 'success' | 'error' }
 export default function SettingsPage() {
   const { authToken, logout } = useStore()
   const [activeTab, setActiveTab] = useState<Tab>('general')
-  const [toast, setToast] = useState<Toast | null>(null)
 
   // ── General state ──────────────────────────────────────────────
   const [profile, setProfile] = useState({
@@ -72,8 +72,7 @@ export default function SettingsPage() {
 
   // ─── Helpers ──────────────────────────────────────────────────
   const showToast = (message: string, type: 'success' | 'error') => {
-    setToast({ message, type })
-    setTimeout(() => setToast(null), 4000)
+    reactToast[type](message)
   }
 
   // ─── Handlers ─────────────────────────────────────────────────
@@ -170,15 +169,6 @@ export default function SettingsPage() {
         <AdminNavbar />
         <main className="p-4 md:p-8 bg-slate-50 dark:bg-slate-950 min-h-screen">
 
-          {/* Toast */}
-          {toast && (
-            <div className={`fixed top-6 right-6 z-50 flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-lg text-sm font-medium transition-all ${toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
-              }`}>
-              {toast.type === 'success' ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-              {toast.message}
-            </div>
-          )}
-
           <div className="max-w-5xl mx-auto">
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Settings</h1>
@@ -195,8 +185,8 @@ export default function SettingsPage() {
                         key={id}
                         onClick={() => setActiveTab(id)}
                         className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${activeTab === id
-                            ? 'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-400'
-                            : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400'
+                          ? 'bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-400'
+                          : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400'
                           }`}
                       >
                         <Icon className="h-4 w-4" />

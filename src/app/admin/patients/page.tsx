@@ -11,6 +11,7 @@ import { searchItems } from "@/lib/search-utils"
 import { Plus, Search, Edit, Trash2, Eye } from "lucide-react"
 import { API_BASE_URL } from "@/lib/api_config"
 import Link from "next/link"
+import { toast } from "react-toastify"
 
 const mockPatients = [
   { id: "p1", name: "Ali Ahmed", email: "ali@example.com", phone: "03001234567", city: "Karachi", status: "active" },
@@ -83,7 +84,7 @@ export default function PatientsPage() {
 
   const handleAddPatient = async () => {
     if (!newPatient.username || !newPatient.email || !newPatient.password || !newPatient.phone) {
-      alert("Please fill in all required fields")
+      toast.error("Please fill in all required fields")
       return
     }
 
@@ -104,11 +105,11 @@ export default function PatientsPage() {
         setNewPatient({ username: '', email: '', password: '', phone: '', city: '' })
       } else {
         const err = await res.json()
-        alert("Failed to add patient: " + (err.error || "Unknown error"))
+        toast.error("Failed to add patient: " + (err.error || "Unknown error"))
       }
     } catch (error) {
       console.error("Failed to add patient")
-      alert("Failed to add patient")
+      toast.error("Failed to add patient")
     }
   }
 
@@ -126,11 +127,11 @@ export default function PatientsPage() {
           setPatients(patients.filter(p => p.id !== id));
         } else {
           const err = await res.json();
-          alert("Failed to delete patient: " + (err.error || "Unknown error"));
+          toast.error("Failed to delete patient: " + (err.error || "Unknown error"));
         }
       } catch (error) {
         console.error("Failed to delete patient", error);
-        alert("Failed to delete patient");
+        toast.error("Failed to delete patient");
       }
     }
   };
@@ -371,11 +372,11 @@ export default function PatientsPage() {
                         setEditingPatient(null);
                       } else {
                         const err = await res.json();
-                        alert("Failed to update: " + (err.error || "Unknown error"));
+                        toast.error("Failed to update: " + (err.error || "Unknown error"));
                       }
                     } catch (e) {
                       console.error(e);
-                      alert("Update failed");
+                      toast.error("Update failed");
                     }
                   }}
                 >

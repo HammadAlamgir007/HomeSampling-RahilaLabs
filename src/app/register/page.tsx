@@ -8,7 +8,7 @@ import { useStore } from "@/lib/store"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import { API_BASE_URL } from "@/lib/api_config"
-import { toast } from "sonner"
+import { toast } from "react-toastify"
 
 import { PasswordInput } from "@/components/ui/password-input"
 import { PhoneInput } from "@/components/ui/phone-input"
@@ -105,7 +105,7 @@ export default function RegisterPage() {
           throw new Error(data.message || "Failed to send OTP")
         }
 
-        toast.success("Verification code sent to your email!", { duration: 10000 })
+        toast.success("Verification code sent to your email!", { autoClose: 10000 })
         setIsOtpStep(true)
       } catch (err: any) {
         toast.error(err.message)

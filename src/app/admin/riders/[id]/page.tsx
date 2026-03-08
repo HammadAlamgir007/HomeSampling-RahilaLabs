@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { ArrowLeft, MapPin, Phone, Mail, TrendingUp, Clock, CheckCircle, XCircle } from 'lucide-react'
 import Link from 'next/link'
 import { API_BASE_URL } from "@/lib/api_config"
+import { toast } from "react-toastify"
 
 interface RiderPerformance {
     rider: {
@@ -84,7 +85,7 @@ export default function RiderDetailPage() {
 
             router.push('/admin/riders')
         } catch (err: any) {
-            alert(err.message || 'Failed to delete rider')
+            toast.error(err.message || 'Failed to delete rider')
         }
     }
 

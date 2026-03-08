@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Eye, Check, Box, X, Upload, UserPlus, RefreshCw } from "lucide-react"
 import { useStore } from "@/lib/store"
 import { API_BASE_URL } from "@/lib/api_config"
+import { toast } from "react-toastify"
 
 interface AppointmentsTableProps {
   appointments: any[]
@@ -59,12 +60,12 @@ export function AppointmentsTable({ appointments = [], riders = [], onView, onEd
       const res = await fetch(`${API_BASE_URL}/api/patient/reports/${reportPath}`, {
         headers: { Authorization: `Bearer ${authToken}` }
       })
-      if (!res.ok) { alert('Could not load report. Please try again.'); return }
+      if (!res.ok) { toast.error('Could not load report. Please try again.'); return }
       const blob = await res.blob()
       const url = window.URL.createObjectURL(blob)
       window.open(url, '_blank')
     } catch {
-      alert('Error opening report.')
+      toast.error('Error opening report.')
     }
   }
 
@@ -213,8 +214,8 @@ export function AppointmentsTable({ appointments = [], riders = [], onView, onEd
                     onClick={() => apt.report_path ? previewReport(apt.report_path) : onView?.(apt.id)}
                     title={apt.report_path ? "Preview uploaded report" : "View appointment"}
                     className={`p-2 rounded ${apt.report_path
-                        ? 'hover:bg-blue-100 dark:hover:bg-blue-900 text-blue-600 dark:text-blue-400'
-                        : 'hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400'
+                      ? 'hover:bg-blue-100 dark:hover:bg-blue-900 text-blue-600 dark:text-blue-400'
+                      : 'hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400'
                       }`}
                   >
                     <Eye className="w-4 h-4" />
@@ -246,7 +247,7 @@ export function AppointmentsTable({ appointments = [], riders = [], onView, onEd
                           // Or better: Trigger a callback passed from parent.
                           const token = authToken;
 
-                          if (!token) { alert("Auth token missing"); return; }
+                          if (!token) { toast.error("Auth token missing"); return; }
 
                           try {
                             const res = await fetch(`${API_BASE_URL}/api/admin/upload-report/${apt.id}`, {
@@ -255,13 +256,13 @@ export function AppointmentsTable({ appointments = [], riders = [], onView, onEd
                               body: formData
                             });
                             if (res.ok) {
-                              alert("Report uploaded successfully!");
+                              toast.success("Report uploaded successfully!");
                               window.location.reload(); // Simple reload to refresh
                             } else {
                               const err = await res.json();
-                              alert("Upload failed: " + err.error);
+                              toast.error("Upload failed: " + err.error);
                             }
-                          } catch (err) { console.error(err); alert("Upload error"); }
+                          } catch (err) { console.error(err); toast.error("Upload error"); }
                         }
                       }}
                     />
@@ -269,8 +270,8 @@ export function AppointmentsTable({ appointments = [], riders = [], onView, onEd
                       htmlFor={`file-${apt.id}`}
                       title={apt.report_path ? "Re-upload Report (replace existing)" : "Upload Report"}
                       className={`cursor-pointer p-2 rounded flex items-center justify-center ${apt.report_path
-                          ? 'hover:bg-orange-100 dark:hover:bg-orange-900 text-orange-500 dark:text-orange-400'
-                          : 'hover:bg-purple-100 dark:hover:bg-purple-900 text-purple-600 dark:text-purple-400'
+                        ? 'hover:bg-orange-100 dark:hover:bg-orange-900 text-orange-500 dark:text-orange-400'
+                        : 'hover:bg-purple-100 dark:hover:bg-purple-900 text-purple-600 dark:text-purple-400'
                         }`}
                     >
                       {apt.report_path

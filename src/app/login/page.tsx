@@ -8,7 +8,7 @@ import { useStore } from "@/lib/store"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import { API_BASE_URL } from "@/lib/api_config"
-import { toast } from "sonner"
+import { toast } from "react-toastify"
 
 import { PasswordInput } from "@/components/ui/password-input"
 import { SubmitButton } from "@/components/ui/submit-button"
