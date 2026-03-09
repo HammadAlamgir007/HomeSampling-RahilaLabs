@@ -62,8 +62,14 @@ def create_app(config_name=None):
     _register_utility_routes(app)
 
     # Global error handler
+    from werkzeug.exceptions import NotFound
+
     @app.errorhandler(Exception)
     def handle_exception(e):
+        # Ignore 404s from health checks or invalid paths gracefully without traceback
+        if isinstance(e, NotFound):
+            return jsonify({'success': False, 'message': 'Endpoint not found.'}), 404
+
         import traceback
         app.logger.error(f'Unhandled Exception: {str(e)}\n{traceback.format_exc()}')
         return jsonify({
@@ -226,18 +232,7 @@ def _init_db(app: Flask):
                 db.session.rollback()
                 app.logger.warning(f"Column migration warning: {col_err}")
         app.logger.info("DB column migration check complete")
-
-        # Seed tests
-        if not Test.query.first():
-            tests = [
-                Test(name="Complete Blood Count", description="Full blood work analysis", price=1500),
-                Test(name="Thyroid Profile", description="Thyroid function tests", price=2000),
-                Test(name="Lipid Profile", description="Cholesterol and lipid levels", price=1800),
-                Test(name="Liver Function", description="Liver health assessment", price=2200),
-            ]
-            db.session.bulk_save_objects(tests)
-            db.session.commit()
-            app.logger.info("Seeded initial tests")
+        # Skip seeding demo tests here so seed_from_json can handle it.
 
         # Seed admin
         if not User.query.filter_by(role='admin').first():
