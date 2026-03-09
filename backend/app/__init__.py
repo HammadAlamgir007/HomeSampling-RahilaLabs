@@ -188,6 +188,25 @@ def _init_db(app: Flask):
     try:
         db.create_all()
 
+        # --- Safe column migration ---
+        # Add new columns to the `test` table if they don't already exist.
+        # Uses SQL Server's IF NOT EXISTS check so it's safe to run every startup.
+        from sqlalchemy import text
+        migration_statements = [
+            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('test') AND name = 'code') ALTER TABLE [test] ADD code VARCHAR(20) NULL",
+            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('test') AND name = 'category') ALTER TABLE [test] ADD category VARCHAR(100) NULL",
+            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('test') AND name = 'specimen') ALTER TABLE [test] ADD specimen VARCHAR(100) NULL",
+            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('test') AND name = 'reporting_time') ALTER TABLE [test] ADD reporting_time VARCHAR(50) NULL",
+        ]
+        for stmt in migration_statements:
+            try:
+                db.session.execute(text(stmt))
+                db.session.commit()
+            except Exception as col_err:
+                db.session.rollback()
+                app.logger.warning(f"Column migration warning: {col_err}")
+        app.logger.info("DB column migration check complete")
+
         # Seed tests
         if not Test.query.first():
             tests = [
