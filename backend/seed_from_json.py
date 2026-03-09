@@ -30,6 +30,13 @@ def seed_from_json():
         tests_data = json.load(f)
 
     with app.app_context():
+        # Safeguard: Do NOT seed if there are already tests in the database
+        # This prevents overwriting any changes made by the admin in production.
+        existing_count = Test.query.count()
+        if existing_count > 0:
+            print(f"Database already contains {existing_count} tests. Skipping JSON seed to preserve edits.")
+            return
+
         count = 0
         for test_item in tests_data:
             code = test_item.get('code')
@@ -41,24 +48,17 @@ def seed_from_json():
             if not existing and name:
                 existing = Test.query.filter_by(name=name).first()
 
-            if existing:
-                existing.code = code
-                existing.category = test_item.get('category')
-                existing.specimen = test_item.get('specimen')
-                existing.reporting_time = test_item.get('reporting_time')
-                existing.price = test_item.get('price')
-                existing.description = test_item.get('description', '')
-            else:
-                new_test = Test(
-                    code=code,
-                    name=name,
-                    category=test_item.get('category'),
-                    specimen=test_item.get('specimen'),
-                    reporting_time=test_item.get('reporting_time'),
-                    price=test_item.get('price'),
-                    description=test_item.get('description', '')
-                )
-                db.session.add(new_test)
+            # We only arrive here if db is 0, so we know it doesn't exist.
+            new_test = Test(
+                code=code,
+                name=name,
+                category=test_item.get('category'),
+                specimen=test_item.get('specimen'),
+                reporting_time=test_item.get('reporting_time'),
+                price=test_item.get('price'),
+                description=test_item.get('description', '')
+            )
+            db.session.add(new_test)
             count += 1
 
         db.session.commit()

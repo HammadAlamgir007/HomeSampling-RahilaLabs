@@ -72,5 +72,5 @@ jobs:
           app-name: 'rahila-labs-api'
           slot-name: 'Production'
           package: .
-          startup-command: 'gunicorn --bind=0.0.0.0 --timeout 600 app:app'
+          startup-command: 'gunicorn --bind=0.0.0.0 --timeout 600 wsgi:application'
           
