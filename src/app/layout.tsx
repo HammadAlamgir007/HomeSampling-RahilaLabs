@@ -43,3 +43,4 @@ export default function RootLayout({
 export const metadata = {
   generator: 'v0.app'
 };
+console.log('Dummy change for deployment test');
