@@ -4,9 +4,9 @@ from app import create_app
 from app.models import db, Test
 from sqlalchemy import text
 
-app = create_app('development')
-
-def alter_table():
+def alter_table(app):
+    from app.models import db
+    from sqlalchemy import text
     with app.app_context():
         try:
             db.session.execute(text("ALTER TABLE test ADD COLUMN code VARCHAR(20)"))
@@ -20,7 +20,13 @@ def alter_table():
             # Already altered or error
             pass
 
-def seed_from_json():
+def seed_from_json(app=None):
+    from app.models import db, Test
+    
+    if app is None:
+        from app import create_app
+        app = create_app('development')
+
     json_path = os.path.join(os.path.dirname(__file__), 'tests_seed.json')
     if not os.path.exists(json_path):
         print(f"File {json_path} not found.")
@@ -65,5 +71,7 @@ def seed_from_json():
         print(f"Successfully seeded {count} tests from JSON.")
 
 if __name__ == '__main__':
-    alter_table()
-    seed_from_json()
+    from app import create_app
+    app = create_app('development')
+    alter_table(app)
+    seed_from_json(app)
