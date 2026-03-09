@@ -162,7 +162,8 @@ def _register_utility_routes(app: Flask):
             admin = User(
                 username="admin", email="admin@rahilalabs.com",
                 password_hash=gph("admin123"), role="admin",
-                status="active", is_verified=True
+                status="active", is_verified=True,
+                mrn="SYS-ADMIN-00"
             )
             db.session.add(admin)
             riders = [
@@ -197,6 +198,25 @@ def _init_db(app: Flask):
             "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('test') AND name = 'category') ALTER TABLE [test] ADD category VARCHAR(100) NULL",
             "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('test') AND name = 'specimen') ALTER TABLE [test] ADD specimen VARCHAR(100) NULL",
             "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('test') AND name = 'reporting_time') ALTER TABLE [test] ADD reporting_time VARCHAR(50) NULL",
+            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('appointment') AND name = 'booking_order_id') ALTER TABLE [appointment] ADD booking_order_id VARCHAR(50) NULL",
+            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('appointment') AND name = 'report_path') ALTER TABLE [appointment] ADD report_path VARCHAR(255) NULL",
+            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('appointment') AND name = 'rider_id') ALTER TABLE [appointment] ADD rider_id INT NULL",
+            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('appointment') AND name = 'rider_assigned_at') ALTER TABLE [appointment] ADD rider_assigned_at DATETIME NULL",
+            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('appointment') AND name = 'rider_accepted_at') ALTER TABLE [appointment] ADD rider_accepted_at DATETIME NULL",
+            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('appointment') AND name = 'rider_rejected_at') ALTER TABLE [appointment] ADD rider_rejected_at DATETIME NULL",
+            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('appointment') AND name = 'rejection_reason') ALTER TABLE [appointment] ADD rejection_reason VARCHAR(200) NULL",
+            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('appointment') AND name = 'patient_latitude') ALTER TABLE [appointment] ADD patient_latitude FLOAT NULL",
+            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('appointment') AND name = 'patient_longitude') ALTER TABLE [appointment] ADD patient_longitude FLOAT NULL",
+            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('appointment') AND name = 'arrived_at') ALTER TABLE [appointment] ADD arrived_at DATETIME NULL",
+            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('appointment') AND name = 'sample_collected_at') ALTER TABLE [appointment] ADD sample_collected_at DATETIME NULL",
+            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('appointment') AND name = 'sample_photo') ALTER TABLE [appointment] ADD sample_photo VARCHAR(255) NULL",
+            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('appointment') AND name = 'collection_notes') ALTER TABLE [appointment] ADD collection_notes TEXT NULL",
+            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('appointment') AND name = 'collection_latitude') ALTER TABLE [appointment] ADD collection_latitude FLOAT NULL",
+            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('appointment') AND name = 'collection_longitude') ALTER TABLE [appointment] ADD collection_longitude FLOAT NULL",
+            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('appointment') AND name = 'delivered_at') ALTER TABLE [appointment] ADD delivered_at DATETIME NULL",
+            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('appointment') AND name = 'pickup_deadline') ALTER TABLE [appointment] ADD pickup_deadline DATETIME NULL",
+            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('appointment') AND name = 'delivery_deadline') ALTER TABLE [appointment] ADD delivery_deadline DATETIME NULL",
+            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('appointment') AND name = 'priority_level') ALTER TABLE [appointment] ADD priority_level VARCHAR(20) NULL",
         ]
         for stmt in migration_statements:
             try:
@@ -225,7 +245,8 @@ def _init_db(app: Flask):
                 username="admin",
                 email="admin@rahilalabs.com",
                 password_hash=generate_password_hash("admin123"),
-                role="admin", status="active", is_verified=True
+                role="admin", status="active", is_verified=True,
+                mrn="SYS-ADMIN-01"
             )
             db.session.add(admin)
             db.session.commit()
@@ -236,7 +257,8 @@ def _init_db(app: Flask):
             patient = User(
                 username="ali", email="ali@example.com",
                 password_hash=generate_password_hash("password"),
-                role="patient", phone="1234567890", city="Lahore", is_verified=True
+                role="patient", phone="1234567890", city="Lahore", is_verified=True,
+                mrn="SYS-PATIENT-01"
             )
             db.session.add(patient)
             db.session.commit()
