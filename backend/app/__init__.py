@@ -247,3 +247,10 @@ def _init_db(app: Flask):
 
     except Exception as e:
         app.logger.error(f"Error during DB initialization: {e}")
+
+    # Seed tests from JSON locally or on Azure App Service
+    try:
+        from seed_from_json import seed_from_json
+        seed_from_json()
+    except Exception as e:
+        app.logger.error(f"Error during JSON test seeding: {e}")
