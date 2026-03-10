@@ -72,7 +72,6 @@ run_log.txt
 startup_error.txt
 
 # ── Environment files ─────────────────────────────────────────────────────────
-.env
 .env.local
 .env*.local
 

@@ -44,17 +44,11 @@ def seed_from_json(app=None):
             return
 
         count = 0
+        new_tests = []
         for test_item in tests_data:
             code = test_item.get('code')
             name = test_item.get('name')
-            
-            existing = None
-            if code:
-                existing = Test.query.filter_by(code=code).first()
-            if not existing and name:
-                existing = Test.query.filter_by(name=name).first()
 
-            # We only arrive here if db is 0, so we know it doesn't exist.
             new_test = Test(
                 code=code,
                 name=name,
@@ -64,8 +58,11 @@ def seed_from_json(app=None):
                 price=test_item.get('price'),
                 description=test_item.get('description', '')
             )
-            db.session.add(new_test)
+            new_tests.append(new_test)
             count += 1
+            
+        print("Starting bulk insert to Azure SQL...")
+        db.session.bulk_save_objects(new_tests)
 
         db.session.commit()
         print(f"Successfully seeded {count} tests from JSON.")
