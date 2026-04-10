@@ -1,3 +1,20 @@
+// ── Rahila Labs Branch Locations ─────────────────────────────────
+export const BRANCHES = [
+  { name: "Rahila Lab Church Road", area: "Church Road", city: "Sialkot" },
+  { name: "Rahila Lab Cantt", area: "Cantt", city: "Sialkot" },
+  { name: "Rahila Lab Commissioner Road", area: "Commissioner Road", city: "Sialkot" },
+  { name: "Rahila Lab Uggoki", area: "Uggoki", city: "Sialkot" },
+  { name: "Rahila Lab Rangers Road", area: "Rangers Road", city: "Sialkot" },
+] as const
+
+export const CITIES = ["Sialkot"] as const
+
+// ── Shared Contact Info (same for all branches) ─────────────────
+export const CONTACT_INFO = {
+  phone: "9221 111 724452",
+  email: "info@rahilalabs.com",
+} as const
+
 export const TIME_SLOTS = [
   "09:00 AM",
   "10:00 AM",

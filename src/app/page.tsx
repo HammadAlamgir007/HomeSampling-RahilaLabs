@@ -6,7 +6,7 @@ import { Footer } from "@/components/footer"
 import { TopHero } from "@/components/top-hero"
 import { TestCard } from "@/components/test-card"
 import { StatCard } from "@/components/stat-card"
-import { Users, ClipboardList, Clock, ArrowRight } from "lucide-react"
+import { Users, ClipboardList, Clock, ArrowRight, MapPin } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -84,7 +84,7 @@ export default function Home() {
             <h2 className="text-3xl md:text-4xl font-extrabold text-center mb-16 text-slate-900 dark:text-white">Why Choose Us</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <StatCard number="10K+" label="Happy Patients" icon={<Users className="w-8 h-8" />} />
-              <StatCard number="50+" label="Tests Available" icon={<ClipboardList className="w-8 h-8" />} />
+              <StatCard number="5" label="Branches in Sialkot" icon={<MapPin className="w-8 h-8" />} />
               <StatCard number="24/7" label="Support" icon={<Clock className="w-8 h-8" />} />
             </div>
           </div>

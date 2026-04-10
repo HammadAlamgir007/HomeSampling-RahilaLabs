@@ -1,5 +1,7 @@
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
+import { BRANCHES, CONTACT_INFO } from "@/lib/constants"
+import { MapPin, Phone, Mail } from "lucide-react"
 
 export default function AboutPage() {
   return (
@@ -86,7 +88,7 @@ export default function AboutPage() {
               </div>
             </div>
 
-            <div className="bg-blue-50 rounded-lg p-8">
+            <div className="bg-blue-50 rounded-lg p-8 mb-12">
               <h2 className="text-2xl font-bold text-gray-900 mb-4">Our Commitment</h2>
               <p className="text-gray-700 leading-relaxed mb-4">
                 We are committed to providing the highest quality diagnostic services with utmost privacy and care.
@@ -96,6 +98,33 @@ export default function AboutPage() {
                 Our team of certified professionals ensures that your samples are collected safely and tested
                 accurately, giving you reliable results you can trust.
               </p>
+            </div>
+
+            {/* Our Branches */}
+            <div className="bg-white rounded-lg shadow-lg p-8">
+              <h2 className="text-3xl font-bold text-gray-900 mb-6">Our Locations</h2>
+              <p className="text-gray-600 mb-6">Serving the Sialkot community from 5 convenient locations.</p>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {BRANCHES.map((branch) => (
+                  <div key={branch.name} className="flex items-start gap-3 p-4 bg-blue-50 rounded-xl">
+                    <MapPin className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
+                    <div>
+                      <h3 className="font-semibold text-gray-900">{branch.name}</h3>
+                      <p className="text-sm text-gray-600">{branch.area}, {branch.city}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-6 flex flex-wrap gap-6 text-gray-600">
+                <div className="flex items-center gap-2">
+                  <Phone className="w-4 h-4 text-blue-500" />
+                  <span>{CONTACT_INFO.phone}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-blue-500" />
+                  <span>{CONTACT_INFO.email}</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>

@@ -10,6 +10,7 @@ import { AdminNavbar } from '@/components/admin/admin-navbar'
 import { AdminSidebar } from '@/components/admin/admin-sidebar'
 import { useStore } from '@/lib/store'
 import { API_BASE_URL } from '@/lib/api_config'
+import { BRANCHES } from '@/lib/constants'
 
 type Tab = 'general' | 'security' | 'notifications' | 'storage'
 
@@ -242,13 +243,18 @@ export default function SettingsPage() {
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                            City / Address
+                            Branch
                           </label>
-                          <Input
+                          <select
                             value={profile.city}
                             onChange={e => setProfile({ ...profile, city: e.target.value })}
-                            placeholder="Islamabad"
-                          />
+                            className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 outline-none"
+                          >
+                            <option value="">Select Branch</option>
+                            {BRANCHES.map((b) => (
+                              <option key={b.name} value={b.name}>{b.name}</option>
+                            ))}
+                          </select>
                         </div>
                         <Button
                           onClick={handleSaveProfile}

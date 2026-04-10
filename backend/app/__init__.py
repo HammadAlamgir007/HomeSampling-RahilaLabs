@@ -224,14 +224,14 @@ def _init_db(app: Flask):
             "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('appointment') AND name = 'delivery_deadline') ALTER TABLE [appointment] ADD delivery_deadline DATETIME NULL",
             "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('appointment') AND name = 'priority_level') ALTER TABLE [appointment] ADD priority_level VARCHAR(20) NULL",
         ]
-        for stmt in migration_statements:
-            try:
-                db.session.execute(text(stmt))
-                db.session.commit()
-            except Exception as col_err:
-                db.session.rollback()
-                app.logger.warning(f"Column migration warning: {col_err}")
-        app.logger.info("DB column migration check complete")
+        # for stmt in migration_statements:
+        #     try:
+        #         db.session.execute(text(stmt))
+        #         db.session.commit()
+        #     except Exception as col_err:
+        #         db.session.rollback()
+        #         app.logger.warning(f"Column migration warning: {col_err}")
+        # app.logger.info("DB column migration check complete")
         # Skip seeding demo tests here so seed_from_json can handle it.
 
         # Seed admin

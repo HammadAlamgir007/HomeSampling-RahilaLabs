@@ -9,6 +9,7 @@ import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import { API_BASE_URL } from "@/lib/api_config"
 import { toast } from "react-toastify"
+import { CITIES } from "@/lib/constants"
 
 import { PasswordInput } from "@/components/ui/password-input"
 import { PhoneInput } from "@/components/ui/phone-input"
@@ -232,11 +233,9 @@ export default function RegisterPage() {
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                   >
                     <option value="">Select City</option>
-                    <option value="Islamabad">Islamabad</option>
-                    <option value="Lahore">Lahore</option>
-                    <option value="Sialkot">Sialkot</option>
-                    <option value="Rawalpindi">Rawalpindi</option>
-                    <option value="Karachi">Karachi</option>
+                    {CITIES.map((city) => (
+                      <option key={city} value={city}>{city}</option>
+                    ))}
                   </select>
                 </div>
 

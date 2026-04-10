@@ -7,6 +7,8 @@ import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import { API_BASE_URL } from "@/lib/api_config"
 import { toast } from "react-toastify"
+import { BRANCHES, CONTACT_INFO } from "@/lib/constants"
+import { MapPin } from "lucide-react"
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -71,15 +73,22 @@ export default function ContactPage() {
                 <div className="space-y-6">
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-2">Phone</h3>
-                    <p className="text-gray-600">9221 111 724452</p>
+                    <p className="text-gray-600">{CONTACT_INFO.phone}</p>
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-2">Email</h3>
-                    <p className="text-gray-600">info@rahilalabs.com</p>
+                    <p className="text-gray-600">{CONTACT_INFO.email}</p>
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900 mb-2">Address</h3>
-                    <p className="text-gray-600">sialkot punjab</p>
+                    <h3 className="font-semibold text-gray-900 mb-3">Our Branches</h3>
+                    <ul className="space-y-2">
+                      {BRANCHES.map((branch) => (
+                        <li key={branch.name} className="flex items-start gap-2 text-gray-600">
+                          <MapPin className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+                          <span>{branch.name}, {branch.city}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-2">Hours</h3>

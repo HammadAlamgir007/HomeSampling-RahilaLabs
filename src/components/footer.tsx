@@ -4,6 +4,7 @@ import Link from "next/link"
 import { Mail, Phone, MapPin, Facebook, Twitter, Instagram, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { toast } from "react-toastify"
+import { BRANCHES, CONTACT_INFO } from "@/lib/constants"
 
 export function Footer() {
   return (
@@ -57,21 +58,25 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Contact Information */}
+          {/* Our Branches */}
           <div>
-            <h4 className="font-bold text-white mb-6 uppercase tracking-wider text-sm">Contact Us</h4>
-            <ul className="space-y-4">
-              <li className="flex items-start gap-3">
-                <Mail className="w-5 h-5 text-blue-500 mt-0.5" />
-                <span className="text-slate-400">info@rahilalabs.com</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <Phone className="w-5 h-5 text-blue-500 mt-0.5" />
-                <span className="text-slate-400">9221 111 724452</span>
-              </li>
-              <li className="flex items-start gap-3">
-                <MapPin className="w-5 h-5 text-blue-500 mt-0.5" />
-                <span className="text-slate-400">123 Lab Main Ave, Block 4,<br />Islamabad, Pakistan</span>
+            <h4 className="font-bold text-white mb-6 uppercase tracking-wider text-sm">Our Branches</h4>
+            <ul className="space-y-3">
+              {BRANCHES.map((branch) => (
+                <li key={branch.name} className="flex items-start gap-2">
+                  <MapPin className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+                  <span className="text-slate-400 text-sm">{branch.name}, {branch.city}</span>
+                </li>
+              ))}
+              <li className="pt-2 space-y-2">
+                <div className="flex items-start gap-2">
+                  <Phone className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+                  <span className="text-slate-400 text-sm">{CONTACT_INFO.phone}</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Mail className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+                  <span className="text-slate-400 text-sm">{CONTACT_INFO.email}</span>
+                </div>
               </li>
             </ul>
           </div>

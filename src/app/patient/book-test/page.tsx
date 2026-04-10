@@ -8,7 +8,7 @@ import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import BookingStepper from "@/components/booking-stepper"
 import { toast } from "react-toastify"
-import { TIME_SLOTS, STATES } from "@/lib/constants"
+import { TIME_SLOTS, STATES, CITIES } from "@/lib/constants"
 import { API_BASE_URL } from "@/lib/api_config"
 import { Search, Filter, CheckCircle2 } from "lucide-react"
 
@@ -376,11 +376,9 @@ export default function BookTestPage() {
                           className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                         >
                           <option value="">Select City</option>
-                          <option value="Islamabad">Islamabad</option>
-                          <option value="Lahore">Lahore</option>
-                          <option value="Sialkot">Sialkot</option>
-                          <option value="Rawalpindi">Rawalpindi</option>
-                          <option value="Karachi">Karachi</option>
+                          {CITIES.map((city) => (
+                            <option key={city} value={city}>{city}</option>
+                          ))}
                         </select>
                       </div>
                       <div>
