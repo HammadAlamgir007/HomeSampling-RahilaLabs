@@ -1,7 +1,7 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Build and deploy Node.js app to Azure Web App - rahila-labs-frontend
+name: Build and deploy Node.js app to Azure Web App - rahila-labs-web
 
 on:
   push:
@@ -82,14 +82,14 @@ jobs:
 
       - name: Disable Oryx Build and Set Startup Command on Azure
         run: |
-          RG=$(az webapp list --query "[?name=='rahila-labs-frontend'].resourceGroup" -o tsv)
-          az webapp config appsettings set -g $RG -n rahila-labs-frontend --settings SCM_DO_BUILD_DURING_DEPLOYMENT=false ENABLE_ORYX_BUILD=false
-          az webapp config set -g $RG -n rahila-labs-frontend --startup-file "node server.js"
+          RG=$(az webapp list --query "[?name=='rahila-labs-web'].resourceGroup" -o tsv)
+          az webapp config appsettings set -g $RG -n rahila-labs-web --settings SCM_DO_BUILD_DURING_DEPLOYMENT=false ENABLE_ORYX_BUILD=false
+          az webapp config set -g $RG -n rahila-labs-web --startup-file "node server.js"
 
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'rahila-labs-frontend'
+          app-name: 'rahila-labs-web'
           slot-name: 'Production'
           package: release.zip
