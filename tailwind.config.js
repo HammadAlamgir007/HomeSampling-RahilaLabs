@@ -80,12 +80,18 @@ module.exports = {
                     "80%": { transform: "rotate(2deg)" },
                     "100%": { transform: "rotate(0deg)" },
                 },
+                shake: {
+                    "0%, 100%": { transform: "translateX(0)" },
+                    "10%, 30%, 50%, 70%, 90%": { transform: "translateX(-4px)" },
+                    "20%, 40%, 60%, 80%": { transform: "translateX(4px)" },
+                },
             },
             animation: {
                 "accordion-down": "accordion-down 0.2s ease-out",
                 "accordion-up": "accordion-up 0.2s ease-out",
                 "blob": "blob 7s infinite",
                 "swing": "swing 1s ease-out",
+                "shake": "shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both",
             },
         },
     },

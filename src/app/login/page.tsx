@@ -104,14 +104,21 @@ function LoginContent() {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-950 dark:to-slate-900 transition-colors duration-300 flex items-center justify-center px-4 py-12">
-        <div className="w-full max-w-md">
-          <div className="bg-white dark:bg-slate-950 dark:border dark:border-slate-800 rounded-lg shadow-lg p-8">
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+      <div className="min-h-[85vh] bg-gradient-to-br from-slate-100 via-blue-50 to-slate-200 dark:from-[#0B1120] dark:via-[#020617] dark:to-[#0F172A] flex items-center justify-center px-4 py-16 relative overflow-hidden">
+        {/* Decorative background blurs */}
+        <div className="absolute top-[10%] p-32 bg-blue-400/20 rounded-full blur-[100px] pointer-events-none" />
+        <div className="absolute bottom-[10%] right-[10%] p-32 bg-teal-400/10 rounded-full blur-[100px] pointer-events-none" />
+        
+        <div className="w-full max-w-[440px] relative z-10">
+          <div className="bg-white dark:bg-slate-800 border-2 border-white/40 dark:border-slate-700 rounded-3xl shadow-2xl shadow-blue-900/10 dark:shadow-none p-8 sm:p-10 animate-in fade-in slide-in-from-bottom-8 duration-700">
+            <div className="mb-8 text-center">
+              <div className="mx-auto w-12 h-12 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center mb-4 transform -rotate-3 hover:rotate-0 transition-transform">
+                <CheckCircle2 className="w-6 h-6" />
+              </div>
+              <h1 className="text-3xl font-black text-slate-900 dark:text-white mb-2 tracking-tight">
                 {redirectPath?.includes("book-test") ? "Login to Book Test" : "Welcome Back"}
               </h1>
-              <p className="text-gray-600 dark:text-slate-400">
+              <p className="text-slate-500 dark:text-slate-400 font-medium">
                 {redirectPath?.includes("book-test")
                   ? "Create an account or login to continue booking"
                   : "Sign in to your Rahila Labs account"}
@@ -119,67 +126,65 @@ function LoginContent() {
             </div>
 
             {errors.global && (
-              <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-sm rounded-lg border border-red-200 dark:border-red-800 flex items-start">
-                <span className="font-semibold block">{errors.global}</span>
+              <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded-xl border border-red-100 dark:border-red-900/30 flex items-center gap-3 animate-shake">
+                <span className="font-bold flex-1">{errors.global}</span>
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Email Address</label>
-                <div className="relative">
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="space-y-1.5">
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 transition-colors focus-within:text-blue-600">Email Address</label>
+                <div className="relative group">
                   <input
                     ref={refs.email}
                     type="email"
                     value={email}
                     onChange={handleEmailChange}
-                    className={`w-full px-4 py-2 border ${errors.email ? 'border-red-400' : 'border-gray-300'} dark:border-slate-700 dark:bg-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none`}
+                    className={`w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border ${errors.email ? 'border-red-400 animate-shake focus:ring-red-500/20' : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'} dark:text-white rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all duration-300`}
                     placeholder="you@example.com"
                   />
-                  {!errors.email && email.includes('@') && email.includes('.') && <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500 w-5 h-5 pointer-events-none" />}
+                  {!errors.email && email.includes('@') && email.includes('.') && <CheckCircle2 className="absolute right-3.5 top-1/2 -translate-y-1/2 text-emerald-500 w-5 h-5 pointer-events-none animate-in zoom-in duration-300 drop-shadow-sm" />}
                 </div>
-                {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+                {errors.email && <p className="text-red-500 text-sm font-medium mt-1 animate-in fade-in">{errors.email}</p>}
               </div>
 
-              <div ref={refs.password}>
-                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Password</label>
-                <PasswordInput
-                  value={password}
-                  onChange={handlePasswordChange}
-                  className={errors.password ? "border-red-400" : ""}
-                  placeholder="••••••••"
-                />
-                {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
+              <div ref={refs.password} className="space-y-1.5">
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 transition-colors focus-within:text-blue-600">Password</label>
+                <div className={errors.password ? "animate-shake" : ""}>
+                   <PasswordInput
+                     value={password}
+                     onChange={handlePasswordChange}
+                     className={`py-3 bg-slate-50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 rounded-xl transition-all duration-300 ${errors.password ? 'border-red-400 focus:ring-red-500/20 focus:border-red-500' : ''}`}
+                     placeholder="••••••••"
+                   />
+                </div>
+                {errors.password && <p className="text-red-500 text-sm font-medium mt-1 animate-in fade-in">{errors.password}</p>}
               </div>
 
-              <div className="flex items-center justify-between mt-1">
-                <div className="flex items-center">
-                  <input
-                    id="remember-me"
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-slate-700 rounded bg-white dark:bg-slate-900"
-                  />
-                  <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700 dark:text-slate-300">
+              <div className="flex items-center justify-between pt-2">
+                <div className="flex items-center group cursor-pointer" onClick={() => setRememberMe(!rememberMe)}>
+                  <div className={`w-5 h-5 rounded border ${rememberMe ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 group-hover:border-blue-400'} flex items-center justify-center transition-colors duration-200 mr-2.5`}>
+                    {rememberMe && <CheckCircle2 className="w-3.5 h-3.5" />}
+                  </div>
+                  <span className="text-sm font-medium text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-slate-200 transition-colors">
                     Remember me
-                  </label>
+                  </span>
                 </div>
-                <Link href="/forgot-password" className="text-sm text-blue-600 hover:underline">
+                <Link href="/forgot-password" className="text-sm font-bold text-blue-600 hover:text-blue-700 hover:underline transition-colors decoration-2 underline-offset-2">
                   Forgot Password?
                 </Link>
               </div>
 
-              <SubmitButton isLoading={isLoading} type="submit" className="mt-2">
-                {isLoading ? "Signing in..." : "Sign In"}
+              <SubmitButton isLoading={isLoading} type="submit" className="w-full mt-4 py-3.5 rounded-xl text-md font-bold shadow-lg shadow-blue-500/20 transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:hover:translate-y-0">
+                {isLoading ? "Signing in securely..." : "Sign In"}
               </SubmitButton>
             </form>
 
-            <div className="mt-6 text-center">
-              <p className="text-gray-600 dark:text-slate-400">
-                Don't have an account?{" "}
-                <Link href="/register" className="text-blue-600 hover:underline font-semibold">
-                  Register here
+            <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 text-center">
+              <p className="text-slate-500 dark:text-slate-400 font-medium">
+                New to Rahila Labs?{" "}
+                <Link href="/register" className="text-blue-600 hover:text-blue-700 hover:underline font-bold transition-colors decoration-2 underline-offset-2">
+                  Create an account
                 </Link>
               </p>
             </div>

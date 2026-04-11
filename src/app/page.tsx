@@ -39,11 +39,11 @@ export default function Home() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-white dark:bg-slate-950 transition-colors duration-300">
+      <main className="min-h-screen bg-white dark:bg-[#020617] transition-colors duration-300">
         <TopHero />
 
         {/* Tests Section */}
-        <section className="py-20 md:py-32 bg-slate-50 dark:bg-slate-900 border-t border-slate-100">
+        <section className="py-20 md:py-32 bg-slate-100 dark:bg-[#0F172A] border-y border-slate-200 dark:border-[#1E293B]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white mb-4">Featured Health Tests</h2>
@@ -79,7 +79,7 @@ export default function Home() {
         </section>
 
         {/* Stats Section */}
-        <section className="py-20 md:py-24 bg-white dark:bg-slate-950">
+        <section className="py-20 md:py-24 bg-white dark:bg-[#020617]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2 className="text-3xl md:text-4xl font-extrabold text-center mb-16 text-slate-900 dark:text-white">Why Choose Us</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -91,7 +91,7 @@ export default function Home() {
         </section>
 
         {/* How It Works */}
-        <section className="py-20 md:py-32 bg-slate-50 dark:bg-slate-900 border-t border-slate-100">
+        <section className="py-20 md:py-32 bg-slate-100 dark:bg-[#0F172A] border-t border-slate-200 dark:border-[#1E293B]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2 className="text-3xl md:text-4xl font-extrabold text-center mb-16 text-slate-900 dark:text-white">How It Works</h2>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-12 md:gap-8 relative">

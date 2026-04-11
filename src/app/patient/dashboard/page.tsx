@@ -113,114 +113,142 @@ export default function DashboardPage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-gradient-to-b from-blue-50 to-white dark:from-slate-950 dark:to-slate-900 transition-colors duration-300">
-        <div className="container mx-auto px-4 py-16">
-          <div className="max-w-6xl mx-auto">
-            <div className="mb-8 mt-4 md:mt-0">
-              <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">Welcome, {user.name}!</h1>
-              <p className="text-gray-600 dark:text-slate-400">
-                <span className="font-semibold text-blue-600 mr-4">MRN: {user.mrn || "Pending"}</span>
-                Manage your health tests and bookings
-              </p>
-            </div>
+      <main className="min-h-screen bg-slate-100 dark:bg-[#020617] transition-colors duration-300 relative overflow-hidden">
+        {/* Decorative background vectors */}
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/10 dark:bg-blue-600/5 rounded-full blur-[120px] pointer-events-none -translate-y-1/2 translate-x-1/3" />
+        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-teal-500/10 dark:bg-teal-600/5 rounded-full blur-[120px] pointer-events-none translate-y-1/3 -translate-x-1/4" />
 
-            {/* Stat Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-              <div className="bg-white dark:bg-slate-900 dark:border dark:border-slate-800 rounded-2xl shadow-sm hover:shadow-md transition-all p-6 border border-slate-100">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300">Total Bookings</h3>
-                  <div className="p-3 bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-full">
-                    <ClipboardList className="w-6 h-6" />
-                  </div>
-                </div>
-                <p className="text-4xl font-extrabold text-slate-900 dark:text-white">{bookings.length}</p>
-              </div>
-
-              <div className="bg-white dark:bg-slate-900 dark:border dark:border-slate-800 rounded-2xl shadow-sm hover:shadow-md transition-all p-6 border border-slate-100">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300">Upcoming Tests</h3>
-                  <div className="p-3 bg-yellow-50 dark:bg-yellow-900/40 text-yellow-600 dark:text-yellow-400 rounded-full">
-                    <CalendarClock className="w-6 h-6" />
-                  </div>
-                </div>
-                <p className="text-4xl font-extrabold text-slate-900 dark:text-white">{upcomingBookings.length}</p>
-              </div>
-
-              <div className="bg-white dark:bg-slate-900 dark:border dark:border-slate-800 rounded-2xl shadow-sm hover:shadow-md transition-all p-6 border border-slate-100">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-300">Ready Reports</h3>
-                  <div className="p-3 bg-green-50 dark:bg-green-900/40 text-green-600 dark:text-green-400 rounded-full">
-                    <FileCheck2 className="w-6 h-6" />
-                  </div>
-                </div>
-                <p className="text-4xl font-extrabold text-slate-900 dark:text-white">
-                  {readyReports.length}
+        <div className="container mx-auto px-4 py-12 relative z-10">
+          <div className="max-w-6xl mx-auto space-y-10">
+            
+            {/* Premium Welcome Banner */}
+            <div className="bg-gradient-to-r from-blue-700 to-indigo-600 dark:from-blue-900/80 dark:to-indigo-900/80 rounded-[2rem] p-8 sm:p-12 text-white shadow-2xl shadow-blue-900/20 relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-700">
+              <div className="absolute top-0 right-0 p-32 bg-white/10 rounded-full blur-[80px]" />
+              <div className="relative z-10">
+                <h1 className="text-4xl md:text-5xl font-black mb-3 tracking-tight">Hello, {user.name} 👋</h1>
+                <p className="text-blue-100 text-lg max-w-2xl font-medium">
+                  <span className="inline-block bg-white/20 backdrop-blur-md px-3 py-1 rounded-lg text-white font-bold mr-4 font-mono shadow-sm">MRN: {user.mrn || "Pending"}</span>
+                  Welcome to your secure health portal. Manage appointments and access your medical reports instantly.
                 </p>
               </div>
             </div>
 
-            {/* Upcoming Appointments */}
-            <div className="bg-white dark:bg-slate-900 dark:border dark:border-slate-800 rounded-lg shadow-lg p-8 mb-12">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Upcoming Appointments</h2>
+            {/* Premium Stat Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-150 fill-mode-both">
+              <div className="group bg-white dark:bg-slate-800 rounded-[2rem] p-8 border border-slate-200 dark:border-slate-700 shadow-xl shadow-slate-200/50 dark:shadow-none hover:-translate-y-1 hover:shadow-2xl hover:shadow-blue-900/10 transition-all duration-300">
+                <div className="flex items-start justify-between mb-6">
+                  <h3 className="text-lg font-bold text-slate-600 dark:text-slate-400">Total Bookings</h3>
+                  <div className="p-4 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
+                    <ClipboardList className="w-6 h-6" />
+                  </div>
+                </div>
+                <p className="text-5xl font-black text-slate-900 dark:text-white tracking-tight">{bookings.length}</p>
+              </div>
+
+              <div className="group bg-white dark:bg-slate-800 rounded-[2rem] p-8 border border-slate-200 dark:border-slate-700 shadow-xl shadow-slate-200/50 dark:shadow-none hover:-translate-y-1 hover:shadow-2xl hover:shadow-amber-900/10 transition-all duration-300">
+                <div className="flex items-start justify-between mb-6">
+                  <h3 className="text-lg font-bold text-slate-600 dark:text-slate-400">Upcoming Tests</h3>
+                  <div className="p-4 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-2xl group-hover:scale-110 group-hover:bg-amber-500 group-hover:text-white transition-all duration-300">
+                    <CalendarClock className="w-6 h-6" />
+                  </div>
+                </div>
+                <p className="text-5xl font-black text-slate-900 dark:text-white tracking-tight">{upcomingBookings.length}</p>
+              </div>
+
+              <div className="group bg-white dark:bg-slate-800 rounded-[2rem] p-8 border border-slate-200 dark:border-slate-700 shadow-xl shadow-slate-200/50 dark:shadow-none hover:-translate-y-1 hover:shadow-2xl hover:shadow-emerald-900/10 transition-all duration-300">
+                <div className="flex items-start justify-between mb-6">
+                  <h3 className="text-lg font-bold text-slate-600 dark:text-slate-400">Ready Reports</h3>
+                  <div className="p-4 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-2xl group-hover:scale-110 group-hover:bg-emerald-500 group-hover:text-white transition-all duration-300">
+                    <FileCheck2 className="w-6 h-6" />
+                  </div>
+                </div>
+                <p className="text-5xl font-black text-slate-900 dark:text-white tracking-tight">{readyReports.length}</p>
+              </div>
+            </div>
+
+            {/* Upcoming Appointments Section */}
+            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[2rem] shadow-xl shadow-slate-200/50 dark:shadow-none p-8 sm:p-10 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300 fill-mode-both">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+                <div>
+                  <h2 className="text-2xl font-black text-slate-900 dark:text-white">Upcoming Appointments</h2>
+                  <p className="text-slate-500 font-medium mt-1">Track your pending health test visits</p>
+                </div>
                 <Link
                   href="/patient/book-test"
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition"
+                  className="bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-slate-100 text-white dark:text-slate-900 shadow-lg shadow-slate-900/20 dark:shadow-white/20 font-bold py-3 px-8 rounded-xl transition-all duration-300 hover:scale-105 active:scale-95"
                 >
                   Book New Test
                 </Link>
               </div>
 
               {upcomingBookings.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-gray-600 dark:text-slate-400 mb-4">No upcoming appointments</p>
-                  <Link href="/patient/book-test" className="text-blue-600 hover:underline font-semibold">
-                    Book your first test
+                <div className="text-center py-16 bg-slate-50/50 dark:bg-slate-950/30 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700">
+                  <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
+                    <CalendarClock className="w-8 h-8" />
+                  </div>
+                  <p className="text-lg font-bold text-slate-700 dark:text-slate-300 mb-2">No upcoming appointments</p>
+                  <p className="text-slate-500 dark:text-slate-400 mb-4 font-medium">Your schedule is completely clear.</p>
+                  <Link href="/patient/book-test" className="text-blue-600 hover:text-blue-700 dark:text-blue-400 hover:underline font-bold">
+                    Book your first test →
                   </Link>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {upcomingBookings.map((booking) => (
-                    <div key={booking.id} className="border border-slate-100 dark:border-slate-800 rounded-2xl p-6 hover:shadow-md hover:bg-slate-50 transition-all bg-white dark:bg-slate-900/50">
-                      <div className="flex justify-between items-start mb-2">
+                    <div key={booking.id} className="group border-2 border-slate-100 dark:border-slate-700 rounded-2xl p-6 hover:shadow-lg hover:shadow-slate-200/50 dark:hover:shadow-slate-950/50 hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-300 bg-slate-50 dark:bg-slate-900">
+                      <div className="flex justify-between items-start mb-4">
                         <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-semibold text-gray-900 dark:text-gray-100">{booking.testName}</h3>
-                            {booking.bookingOrderId && (
-                              <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
-                                {booking.bookingOrderId}
-                              </span>
-                            )}
+                          <div className="flex flex-wrap items-center gap-2 mb-2">
+                            <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2.5 py-1 rounded-md dark:bg-blue-900/60 dark:text-blue-300 tracking-wide uppercase">
+                              #{booking.bookingOrderId || 'PENDING'}
+                            </span>
+                            <span className={`px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wide ${STATUS_COLORS[booking.status]}`}>
+                              {booking.status}
+                            </span>
                           </div>
-                          <p className="text-sm text-gray-600 dark:text-slate-400">Scheduled: {booking.scheduledDate}</p>
-                        </div>
-                        <div className="flex flex-col items-end gap-2">
-                          <span
-                            className={`px-3 py-1 rounded-full text-xs font-semibold ${STATUS_COLORS[booking.status]}`}
-                          >
-                            {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-                          </span>
-                          {booking.status === 'pending' && (
-                            <button
-                              onClick={() => handleCancel(booking.id)}
-                              className="text-xs text-red-600 hover:text-red-800 hover:underline"
-                            >
-                              Cancel
-                            </button>
-                          )}
+                          <h3 className="text-xl font-bold text-slate-900 dark:text-white leading-tight">{booking.testName}</h3>
                         </div>
                       </div>
-                      <p className="text-sm text-gray-600 dark:text-slate-400">Address: {booking.address}</p>
-                      {booking.rider && (
-                        <div className="mt-2 pt-2 border-t border-gray-200 dark:border-slate-700">
-                          <p className="text-sm text-gray-700 dark:text-slate-300">
-                            <span className="font-semibold">Rider Assigned:</span> {booking.rider.name}
-                          </p>
-                          <p className="text-sm text-gray-600 dark:text-slate-400">
-                            Phone: {booking.rider.phone}
-                          </p>
+                      
+                      <div className="space-y-3 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
+                            <CalendarClock className="w-4 h-4 text-slate-500" />
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Scheduled for</p>
+                            <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">{booking.scheduledDate}</p>
+                          </div>
                         </div>
-                      )}
+                        
+                        <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 border border-slate-100 dark:border-slate-800">
+                          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Visit Address</p>
+                          <p className="text-sm font-medium text-slate-700 dark:text-slate-300 line-clamp-2">{booking.address}</p>
+                        </div>
+                        
+                        {booking.rider && (
+                          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-3 border border-blue-100 dark:border-blue-900/30 flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-blue-200 dark:bg-blue-800 flex items-center justify-center text-blue-700 dark:text-blue-300 font-bold text-xs">
+                              {booking.rider.name.charAt(0)}
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-blue-500 uppercase tracking-wider">Assigned Rider</p>
+                              <p className="text-sm font-semibold text-blue-900 dark:text-blue-300">{booking.rider.name} <span className="text-blue-600 dark:text-blue-400 font-medium ml-1">({booking.rider.phone})</span></p>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {booking.status === 'pending' && (
+                          <div className="pt-2 flex justify-end">
+                            <button
+                              onClick={() => handleCancel(booking.id)}
+                              className="text-sm font-bold text-red-500 hover:text-white border border-red-200 hover:border-red-500 hover:bg-red-500 py-1.5 px-4 rounded-lg transition-colors"
+                            >
+                              Cancel Booking
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -228,29 +256,43 @@ export default function DashboardPage() {
             </div>
 
             {/* Your Reports Section */}
-            <div className="bg-white dark:bg-slate-900 dark:border dark:border-slate-800 rounded-lg shadow-lg p-8 mb-12">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Your Reports</h2>
+            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[2rem] shadow-xl shadow-slate-200/50 dark:shadow-none p-8 sm:p-10 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-500 fill-mode-both">
+              <div className="flex items-center gap-3 mb-8">
+                <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/40 rounded-xl flex items-center justify-center text-emerald-600 dark:text-emerald-400 transform -rotate-6">
+                  <FileCheck2 className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black text-slate-900 dark:text-white">Your Medical Reports</h2>
+                  <p className="text-slate-500 font-medium">Download your finalized lab results securely</p>
+                </div>
+              </div>
+
               {readyReports.length === 0 ? (
-                <p className="text-gray-600 dark:text-slate-400">No reports available yet.</p>
+                <div className="bg-slate-50 dark:bg-slate-800/30 rounded-2xl p-8 border border-slate-100 dark:border-slate-800 text-center">
+                  <p className="text-slate-500 dark:text-slate-400 font-medium">No reports are ready for download yet.</p>
+                </div>
               ) : (
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {readyReports.map((booking) => (
-                    <div key={booking.id} className="border border-green-200 dark:border-green-900 rounded-lg p-4 bg-green-50 dark:bg-green-900/20 flex justify-between items-center">
+                    <div key={booking.id} className="group border border-emerald-200 dark:border-emerald-900/50 rounded-2xl p-5 bg-gradient-to-r from-emerald-50/50 to-white dark:from-emerald-900/10 dark:to-slate-900 flex justify-between items-center hover:shadow-lg hover:shadow-emerald-100 dark:hover:shadow-emerald-900/20 transition-all duration-300">
                       <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold text-gray-900 dark:text-gray-100">{booking.testName}</h3>
-                          {booking.bookingOrderId && (
-                            <span className="bg-green-100 text-green-800 text-xs font-semibold px-2 py-0.5 rounded dark:bg-green-900 dark:text-green-300">
-                              {booking.bookingOrderId}
-                            </span>
-                          )}
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <h3 className="font-bold text-slate-900 dark:text-white leading-tight">{booking.testName}</h3>
                         </div>
-                        <p className="text-sm text-gray-600 dark:text-slate-400">{booking.scheduledDate}</p>
+                        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                          <CalendarClock className="w-3.5 h-3.5" />
+                          {booking.scheduledDate}
+                        </p>
+                        {booking.bookingOrderId && (
+                          <p className="text-xs font-bold text-emerald-600/70 dark:text-emerald-400 mt-1 uppercase tracking-wide">
+                            ID: {booking.bookingOrderId}
+                          </p>
+                        )}
                       </div>
                       <div>
                         <a
                           href="#"
-                          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm font-medium inline-block"
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md shadow-emerald-600/20 transition-all duration-300 hover:scale-105 active:scale-95 inline-flex items-center gap-2"
                           onClick={(e) => {
                             e.preventDefault();
                             if (!booking.report_path) { toast.info("Report generating..."); return; }
@@ -271,7 +313,7 @@ export default function DashboardPage() {
                               .catch(() => toast.error("Failed to download report."));
                           }}
                         >
-                          Download Report
+                          Download
                         </a>
                       </div>
                     </div>

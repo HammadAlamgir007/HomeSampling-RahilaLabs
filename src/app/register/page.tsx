@@ -159,37 +159,43 @@ export default function RegisterPage() {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4 py-12">
-        <div className="w-full max-w-md">
-          <div className="bg-white rounded-lg shadow-lg p-8">
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Account</h1>
-              <p className="text-gray-600">Join Rahila Labs for easy home sample collection</p>
+      <div className="min-h-[85vh] bg-gradient-to-br from-slate-100 via-blue-50 to-slate-200 dark:from-[#0B1120] dark:via-[#020617] dark:to-[#0F172A] flex items-center justify-center px-4 py-16 relative overflow-hidden">
+        {/* Decorative background blurs */}
+        <div className="absolute top-[10%] left-[10%] p-32 bg-blue-400/20 rounded-full blur-[100px] pointer-events-none" />
+        <div className="absolute bottom-[10%] right-[10%] p-32 bg-teal-400/10 rounded-full blur-[100px] pointer-events-none" />
+
+        <div className="w-full max-w-[480px] relative z-10">
+          <div className="bg-white dark:bg-slate-800 border-2 border-white/40 dark:border-slate-700 rounded-3xl shadow-2xl shadow-blue-900/10 dark:shadow-none p-8 sm:p-10 animate-in fade-in slide-in-from-bottom-8 duration-700">
+            <div className="mb-8 text-center">
+              <div className="mx-auto w-12 h-12 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center mb-4 transform rotate-3 hover:rotate-0 transition-transform">
+                <CheckCircle2 className="w-6 h-6" />
+              </div>
+              <h1 className="text-3xl font-black text-slate-900 dark:text-white mb-2 tracking-tight">Create Account</h1>
+              <p className="text-slate-500 dark:text-slate-400 font-medium">Join Rahila Labs for exact diagnostics</p>
             </div>
 
             {!isOtpStep ? (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                  <div className="relative">
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 transition-colors focus-within:text-blue-600">Full Name</label>
+                  <div className="relative group">
                     <input
                       ref={refs.name}
                       type="text"
                       name="name"
                       value={formData.name}
                       onChange={handleChange}
-                      className={`w-full px-4 py-2 border ${errors.name ? 'border-red-400' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none`}
+                      className={`w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border ${errors.name ? 'border-red-400 animate-shake focus:ring-red-500/20' : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'} dark:text-white rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all duration-300`}
                       placeholder="John Doe"
                     />
-                    {!errors.name && formData.name.length > 2 && <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500 w-5 h-5" />}
+                    {!errors.name && formData.name.length > 2 && <CheckCircle2 className="absolute right-3.5 top-1/2 -translate-y-1/2 text-emerald-500 w-5 h-5 pointer-events-none animate-in zoom-in duration-300 drop-shadow-sm" />}
                   </div>
-                  {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+                  {errors.name && <p className="text-red-500 text-sm font-medium mt-1 animate-in fade-in">{errors.name}</p>}
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                  <p className="text-xs text-gray-500 mb-1">Format: example@domain.com</p>
-                  <div className="relative">
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 transition-colors focus-within:text-blue-600">Email Address</label>
+                  <div className="relative group">
                     <input
                       ref={refs.email}
                       type="email"
@@ -199,103 +205,110 @@ export default function RegisterPage() {
                         setFormData({ ...formData, email: e.target.value.toLowerCase() })
                         if (errors.email) setErrors(prev => ({ ...prev, email: "" }))
                       }}
-                      className={`w-full px-4 py-2 border ${errors.email ? 'border-red-400' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none`}
+                      className={`w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border ${errors.email ? 'border-red-400 animate-shake focus:ring-red-500/20' : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'} dark:text-white rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all duration-300`}
                       placeholder="you@example.com"
                     />
-                    {!errors.email && formData.email.includes('@') && formData.email.includes('.') && <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500 w-5 h-5" />}
+                    {!errors.email && formData.email.includes('@') && formData.email.includes('.') && <CheckCircle2 className="absolute right-3.5 top-1/2 -translate-y-1/2 text-emerald-500 w-5 h-5 pointer-events-none animate-in zoom-in duration-300 drop-shadow-sm" />}
                   </div>
-                  {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+                  {errors.email && <p className="text-red-500 text-sm font-medium mt-1 animate-in fade-in">{errors.email}</p>}
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-                  <p className="text-xs text-gray-500 mb-1">Format: 03XX XXXXXXX</p>
-                  <div className="relative" ref={refs.phone}>
-                    <PhoneInput
-                      value={formData.phone}
-                      onChange={(val) => {
-                        setFormData({ ...formData, phone: val })
-                        if (errors.phone) setErrors(prev => ({ ...prev, phone: "" }))
-                      }}
-                      className={errors.phone ? 'border-red-400' : 'border-gray-300'}
-                    />
-                    {!errors.phone && formData.phone.length >= 10 && <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500 w-5 h-5" />}
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 transition-colors focus-within:text-blue-600">Phone Number</label>
+                  <div className="relative group" ref={refs.phone}>
+                    <div className={errors.phone ? "animate-shake" : ""}>
+                      <PhoneInput
+                        value={formData.phone}
+                        onChange={(val) => {
+                          setFormData({ ...formData, phone: val })
+                          if (errors.phone) setErrors(prev => ({ ...prev, phone: "" }))
+                        }}
+                        className={`w-full bg-slate-50 dark:bg-slate-950/50 border ${errors.phone ? 'border-red-400 focus:ring-red-500/20' : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'} dark:text-white rounded-xl outline-none transition-all duration-300 [&>input]:bg-transparent [&>input]:py-3 [&>input]:border-none [&>input]:focus:ring-0`}
+                      />
+                    </div>
+                    {!errors.phone && formData.phone.length >= 10 && <CheckCircle2 className="absolute right-3.5 top-1/2 -translate-y-1/2 text-emerald-500 w-5 h-5 pointer-events-none animate-in zoom-in duration-300 drop-shadow-sm" />}
                   </div>
-                  {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
+                  {errors.phone && <p className="text-red-500 text-sm font-medium mt-1 animate-in fade-in">{errors.phone}</p>}
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                <div className="space-y-1.5">
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 transition-colors focus-within:text-blue-600">City</label>
                   <select
                     name="city"
                     value={formData.city}
                     onChange={handleChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 dark:text-white rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all duration-300 appearance-none font-medium cursor-pointer"
                   >
-                    <option value="">Select City</option>
+                    <option value="" disabled className="text-slate-400">Select your branch location</option>
                     {CITIES.map((city) => (
                       <option key={city} value={city}>{city}</option>
                     ))}
                   </select>
                 </div>
 
-                <div ref={refs.password}>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                  <p className="text-xs text-gray-500 mb-1">At least 8 chars, include uppercase, number {"&"} symbol</p>
-                  <PasswordInput
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    showStrengthMeter={true}
-                    className={errors.password ? "border-red-400" : ""}
-                  />
-                  {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
+                <div ref={refs.password} className="space-y-1.5">
+                  <div className="flex justify-between items-end mb-1">
+                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 transition-colors focus-within:text-blue-600">Password</label>
+                    <span className="text-[10px] uppercase font-bold text-slate-500">8+ Chars & Symbols</span>
+                  </div>
+                  <div className={errors.password ? "animate-shake" : ""}>
+                    <PasswordInput
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      showStrengthMeter={true}
+                      className={`py-3 bg-slate-50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 rounded-xl transition-all duration-300 ${errors.password ? 'border-red-400 focus:ring-red-500/20 focus:border-red-500' : ''}`}
+                    />
+                  </div>
+                  {errors.password && <p className="text-red-500 text-sm font-medium mt-1 animate-in fade-in">{errors.password}</p>}
                 </div>
 
-                <div ref={refs.confirmPassword}>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
-                  <PasswordInput
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    className={errors.confirmPassword ? "border-red-400" : ""}
-                  />
-                  {errors.confirmPassword && <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>}
+                <div ref={refs.confirmPassword} className="space-y-1.5">
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 transition-colors focus-within:text-blue-600">Confirm Password</label>
+                  <div className={errors.confirmPassword ? "animate-shake" : ""}>
+                    <PasswordInput
+                      name="confirmPassword"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      className={`py-3 bg-slate-50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 rounded-xl transition-all duration-300 ${errors.confirmPassword ? 'border-red-400 focus:ring-red-500/20 focus:border-red-500' : ''}`}
+                    />
+                  </div>
+                  {errors.confirmPassword && <p className="text-red-500 text-sm font-medium mt-1 animate-in fade-in">{errors.confirmPassword}</p>}
                 </div>
 
-                <SubmitButton isLoading={isLoading} type="submit">
+                <SubmitButton isLoading={isLoading} type="submit" className="w-full mt-6 py-3.5 rounded-xl text-md font-bold shadow-lg shadow-blue-500/20 transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:hover:translate-y-0">
                   Send Verification Code
                 </SubmitButton>
               </form>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Enter 6-digit Code</label>
-                  <p className="text-sm text-gray-500 mb-4">We sent a verification code to <strong>{formData.email}</strong></p>
+              <form onSubmit={handleSubmit} className="space-y-6 animate-in fade-in zoom-in-95 fill-mode-both duration-500">
+                <div className="bg-slate-50 dark:bg-slate-900/50 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 text-center">
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Enter 6-digit Code</label>
+                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-6">We securely sent a verification code to <span className="font-bold text-slate-700 dark:text-slate-200">{formData.email}</span></p>
                   <input
                     type="text"
                     value={otpCode}
                     onChange={(e) => setOtpCode(e.target.value)}
                     maxLength={6}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-center text-xl tracking-widest"
-                    placeholder="000000"
+                    className="w-full px-4 py-4 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-center text-3xl font-mono tracking-widest transition-all shadow-inner"
+                    placeholder="------"
                   />
                 </div>
-                <SubmitButton isLoading={isLoading} type="submit" className="mt-4">
+                <SubmitButton isLoading={isLoading} type="submit" className="w-full mt-4 py-3.5 rounded-xl text-md font-bold shadow-lg shadow-blue-500/20 transition-all hover:-translate-y-0.5">
                   Verify & Create Account
                 </SubmitButton>
                 <div className="text-center mt-4">
-                  <button type="button" onClick={() => setIsOtpStep(false)} className="text-sm text-blue-600 hover:underline">
-                    Back to edit details
+                  <button type="button" onClick={() => setIsOtpStep(false)} className="text-sm font-bold text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors underline decoration-slate-300 underline-offset-4">
+                    Wait, let me edit my details
                   </button>
                 </div>
               </form>
             )}
 
-            <div className="mt-6 text-center">
-              <p className="text-gray-600">
+            <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 text-center">
+              <p className="text-slate-500 dark:text-slate-400 font-medium">
                 Already have an account?{" "}
-                <Link href="/login" className="text-blue-600 hover:underline font-semibold">
+                <Link href="/login" className="text-blue-600 hover:text-blue-700 hover:underline font-bold transition-colors decoration-2 underline-offset-2">
                   Sign in here
                 </Link>
               </p>
