@@ -37,15 +37,17 @@ def book_appointment():
     except ValueError as e:
         return jsonify({'error': 'Invalid date format. Use ISO format.'}), 400
 
-    # Idempotency: prevent duplicate exact bookings
-    existing = Appointment.query.filter_by(
-        user_id=current_user_id,
-        test_id=data['test_id'],
-        appointment_date=appointment_date,
-        status='pending',
-    ).first()
-    if existing:
-        return jsonify({'error': 'A booking for this exact test and time slot already exists.'}), 409
+    # Idempotency: prevent duplicate exact bookings unless force=true
+    force = data.get('force', False)
+    if not force:
+        existing = Appointment.query.filter_by(
+            user_id=current_user_id,
+            test_id=data['test_id'],
+            appointment_date=appointment_date,
+            status='pending',
+        ).first()
+        if existing:
+            return jsonify({'error': 'A booking for this exact test and time slot already exists.'}), 409
 
     new_appointment = Appointment(
         user_id=current_user_id,
@@ -67,19 +69,10 @@ def book_appointment():
     test = Test.query.get(data['test_id'])
     test_name = test.name if test else "Laboratory Test"
 
-    mail_result = send_booking_confirmation(
-        patient_email=patient.email,
-        patient_name=patient.username,
-        mrn=patient.mrn or "MRN-PENDING",
-        booking_id=new_appointment.booking_order_id,
-        test_name=test_name,
-        test_date=appointment_date.strftime("%Y-%m-%d %I:%M %p"),
-    )
-
     return jsonify({
         'message': 'Appointment booked successfully',
         'appointment': new_appointment.to_dict(),
-        'email_sent': bool(mail_result),
+        'email_sent': False, # Email only sent on admin approval now
     }), 201
 
 
@@ -124,6 +117,7 @@ def cancel_booking(booking_id):
 @patient_bp.route('/reports/<path:filename>', methods=['GET'])
 @jwt_required()
 def download_report(filename):
+    import datetime as dt
     current_user_id = int(get_jwt_identity())
     try:
         appointment = Appointment.query.filter_by(report_path=filename).first()
@@ -134,6 +128,16 @@ def download_report(filename):
             user = User.query.get(current_user_id)
             if user.role != 'admin':
                 return jsonify({'error': 'Unauthorized'}), 403
+
+        # Report expiry: 30 days after upload (using created_at as proxy if no uploaded_at)
+        if appointment.created_at:
+            expiry = appointment.created_at + dt.timedelta(days=30)
+            if dt.datetime.utcnow() > expiry:
+                return jsonify({
+                    'error': 'Report has expired (30 days). Please contact the lab to request a new copy.',
+                    'expired': True
+                }), 410
+
     except Exception:
         return jsonify({'error': 'Server error verifying report ownership'}), 500
 

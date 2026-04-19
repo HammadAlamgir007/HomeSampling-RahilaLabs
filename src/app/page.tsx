@@ -49,7 +49,7 @@ export default function Home() {
               <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white mb-4">Featured Health Tests</h2>
               <p className="text-lg text-slate-600 max-w-2xl mx-auto">Explore our most popular home diagnostic packages designed for comprehensive wellness screening.</p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 items-stretch">
               {tests.length === 0 ? (
                 <div className="col-span-4 text-center text-slate-500">Loading featured health tests...</div>
               ) : (

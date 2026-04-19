@@ -143,6 +143,7 @@ export default function AppointmentsPage() {
                       riders={riders}
                       onStatusUpdate={handleStatusUpdate}
                       onRiderAssignment={handleRiderAssignment}
+                      onRefresh={fetchAppointments}
                     />
                     <div className="flex items-center justify-between mt-4">
                       <Button

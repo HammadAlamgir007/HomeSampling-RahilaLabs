@@ -10,7 +10,7 @@ import BookingStepper from "@/components/booking-stepper"
 import { toast } from "react-toastify"
 import { TIME_SLOTS, BRANCHES, CITIES } from "@/lib/constants"
 import { API_BASE_URL } from "@/lib/api_config"
-import { Search, Filter, CheckCircle2 } from "lucide-react"
+import { Search, Filter, CheckCircle2, AlertTriangle } from "lucide-react"
 
 export default function BookTestPage() {
   const router = useRouter()
@@ -52,6 +52,9 @@ export default function BookTestPage() {
   const [schedule, setSchedule] = useState({ date: "", time: "" })
   const [notes, setNotes] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [duplicateDialog, setDuplicateDialog] = useState<{
+    testId: string; testName: string; date: string; address: string; resolve: (force: boolean) => void
+  } | null>(null)
 
   // Filtering State
   const [searchTerm, setSearchTerm] = useState('')
@@ -91,13 +94,24 @@ export default function BookTestPage() {
     return (
       <>
         <Navbar />
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-          <div className="text-center max-w-md mx-auto p-8 bg-white rounded-lg shadow-lg">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">Please log in to continue</h1>
-            <p className="text-gray-600 mb-8">You need to be logged in to book a test. Please login or create a new account.</p>
+        <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 transition-colors duration-500">
+          <div className="text-center max-w-md mx-auto p-10 bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-800 animate-in fade-in zoom-in duration-700">
+            <div className="mx-auto w-16 h-16 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center mb-6">
+              <CheckCircle2 className="w-8 h-8" />
+            </div>
+            <h1 className="text-3xl font-black text-slate-900 dark:text-white mb-4 tracking-tight">Please log in to continue</h1>
+            <p className="text-slate-500 dark:text-slate-400 mb-10 font-medium">You need to be logged in to book a test. Please login or create a new account.</p>
             <div className="flex flex-col gap-4">
-              <Link href="/login"><button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition">Login</button></Link>
-              <Link href="/register"><button className="w-full bg-white hover:bg-gray-100 text-blue-600 font-bold py-2 px-4 rounded border border-blue-600 transition">Register</button></Link>
+              <Link href="/login" className="w-full">
+                <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-2xl shadow-lg shadow-blue-500/20 transition-all hover:-translate-y-0.5 active:translate-y-0">
+                  Login to Account
+                </button>
+              </Link>
+              <Link href="/register" className="w-full">
+                <button className="w-full bg-white dark:bg-slate-950 hover:bg-slate-50 dark:hover:bg-slate-900 text-blue-600 dark:text-blue-400 font-bold py-4 px-6 rounded-2xl border-2 border-blue-600 dark:border-blue-500/50 transition-all hover:-translate-y-0.5 active:translate-y-0">
+                  Create New Account
+                </button>
+              </Link>
             </div>
           </div>
         </div>
@@ -112,6 +126,39 @@ export default function BookTestPage() {
 
   const handleAddressChange = (field: string, value: string) => setAddress((prev) => ({ ...prev, [field]: value }))
   const handleScheduleChange = (field: string, value: string) => setSchedule((prev) => ({ ...prev, [field]: value }))
+
+
+  const bookSingle = async (testId: string, appointmentDate: string, fullAddress: string, force = false): Promise<any> => {
+    const response = await fetch(`${API_BASE_URL}/api/patient/book`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${authToken}` },
+      body: JSON.stringify({ test_id: testId, date: appointmentDate, address: fullAddress, force }),
+    })
+    if (!response.ok) {
+      const err = await response.json()
+      if (response.status === 409) {
+        // Ask user if they want to book anyway
+        const shouldForce = await new Promise<boolean>((resolve) => {
+          const test = tests.find((t: any) => String(t.id) === String(testId))
+          setDuplicateDialog({
+            testId,
+            testName: test?.name || testId,
+            date: appointmentDate,
+            address: fullAddress,
+            resolve
+          })
+        })
+        setDuplicateDialog(null)
+        if (shouldForce) {
+          // Retry with force flag – backend ignores idempotency check when force=true
+          return bookSingle(testId, appointmentDate, fullAddress, true)
+        }
+        return null // user chose not to duplicate
+      }
+      throw new Error(err.error || "Failed to book")
+    }
+    return response.json()
+  }
 
   const handleSubmit = async () => {
     if (isSubmitting) return;
@@ -150,20 +197,10 @@ export default function BookTestPage() {
       let emailSent = false;
 
       for (const testId of selectedTests) {
-        const response = await fetch(`${API_BASE_URL}/api/patient/book`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${authToken}` },
-          body: JSON.stringify({ test_id: testId, date: appointmentDate, address: fullAddress }),
-        })
-
-        if (!response.ok) {
-          const err = await response.json()
-          throw new Error(err.error || "Failed to book")
-        }
-
-        const data = await response.json()
-        if (data.appointment?.booking_order_id) orderIds.push(data.appointment.booking_order_id);
-        if (data.email_sent) emailSent = true;
+        const data = await bookSingle(testId, appointmentDate, fullAddress)
+        if (!data) continue // user cancelled duplicate
+        if (data.appointment?.booking_order_id) orderIds.push(data.appointment.booking_order_id)
+        if (data.email_sent) emailSent = true
       }
 
       toast.success(
@@ -189,19 +226,64 @@ export default function BookTestPage() {
   return (
     <>
       <Navbar />
+
+      {/* Duplicate Booking Dialog */}
+      {duplicateDialog && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <div className="relative bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="bg-amber-50 dark:bg-amber-900/30 border-b border-amber-200 dark:border-amber-800 p-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900 rounded-xl flex items-center justify-center">
+                  <AlertTriangle className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+                </div>
+                <div>
+                  <h3 className="font-black text-slate-900 dark:text-white text-lg">Existing Booking Found</h3>
+                  <p className="text-sm text-amber-700 dark:text-amber-400 font-medium">You already have a booking at this time slot</p>
+                </div>
+              </div>
+            </div>
+            <div className="p-6">
+              <p className="text-slate-600 dark:text-slate-300 text-sm mb-2">
+                You already have a booking for <strong className="text-slate-900 dark:text-white">{duplicateDialog.testName}</strong> at this date and time.
+              </p>
+              <p className="text-slate-500 dark:text-slate-400 text-sm">Would you like to proceed and create an additional booking anyway?</p>
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => duplicateDialog.resolve(true)}
+                  className="flex-1 py-3 px-4 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-sm transition-colors"
+                >
+                  Book Anyway
+                </button>
+                <button
+                  onClick={() => duplicateDialog.resolve(false)}
+                  className="flex-1 py-3 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-sm transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <main className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-20">
-        <div className="bg-blue-900 text-white min-h-[300px] pt-24 pb-16 px-4">
-          <div className="max-w-4xl mx-auto text-center">
+        <div className="bg-blue-900 text-white pt-24 pb-20 px-4">
+          <div className="max-w-4xl mx-auto text-center mb-10">
             <h1 className="text-4xl md:text-5xl font-bold mb-4">Book a Test</h1>
             <p className="text-blue-100 text-lg md:text-xl max-w-2xl mx-auto">
               Schedule your home sample collection from our comprehensive catalog of {tests.length || 800}+ diagnostic tests.
             </p>
           </div>
+          <div className="container mx-auto px-4">
+            <div className="max-w-5xl mx-auto">
+              <BookingStepper currentStep={step} />
+            </div>
+          </div>
         </div>
 
-        <div className="container mx-auto px-4 -mt-16 relative z-10">
+        <div className="container mx-auto px-4 -mt-4 relative z-10">
           <div className="max-w-5xl mx-auto">
-            <BookingStepper currentStep={step} />
 
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-6 md:p-8 mt-8">
               {step === 1 && (
@@ -390,7 +472,7 @@ export default function BookTestPage() {
                         >
                           <option value="">Select Branch</option>
                           {BRANCHES.map((branch) => (
-                            <option key={branch.id} value={branch.name}>{branch.name}</option>
+                            <option key={branch.name} value={branch.name}>{branch.name}</option>
                           ))}
                         </select>
                       </div>

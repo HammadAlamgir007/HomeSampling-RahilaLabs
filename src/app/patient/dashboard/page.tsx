@@ -110,6 +110,42 @@ export default function DashboardPage() {
     )
   }
 
+  // ── Status Timeline ────────────────────────────────────────────────────────
+  const STATUS_STEPS = [
+    { key: "pending",   label: "Booked",          short: "Booked" },
+    { key: "confirmed", label: "Approved",         short: "Approved" },
+    { key: "rider_accepted", label: "Rider Assigned",  short: "Rider" },
+    { key: "collected", label: "Sample Collected", short: "Collected" },
+    { key: "completed", label: "Results Ready",    short: "Results" },
+  ]
+  const getStepIndex = (status: string) => {
+    const map: Record<string, number> = {
+      pending: 0, confirmed: 1, rider_accepted: 2, collected: 3, completed: 4,
+      cancelled: -1,
+    }
+    return map[status] ?? 0
+  }
+
+  const handleDownloadReport = async (booking: any) => {
+    if (!booking.report_path) { toast.info("Report generating..."); return }
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/patient/reports/${booking.report_path}`, {
+        headers: { Authorization: `Bearer ${authToken}` }
+      })
+      if (res.status === 410) {
+        toast.error("This report has expired (30 days). Please contact Rahila Labs for a new copy.")
+        return
+      }
+      if (!res.ok) { toast.error("Failed to download report"); return }
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = booking.report_path.split("_").slice(2).join("_") || "report"
+      a.click()
+    } catch { toast.error("Download error") }
+  }
+
   return (
     <>
       <Navbar />
@@ -248,6 +284,42 @@ export default function DashboardPage() {
                             </button>
                           </div>
                         )}
+
+                        {/* Status Timeline */}
+                        <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                          {booking.status === 'cancelled' ? (
+                            <div className="flex items-center gap-2 text-red-500 dark:text-red-400 text-xs font-bold">
+                              <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
+                              Appointment Cancelled
+                            </div>
+                          ) : (() => {
+                            const currentStep = getStepIndex(booking.status)
+                            return (
+                              <div>
+                                <div className="flex items-center justify-between mb-1.5">
+                                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Progress</p>
+                                  <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400">
+                                    {STATUS_STEPS[currentStep]?.label ?? booking.status}
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  {STATUS_STEPS.map((step, idx) => (
+                                    <div key={step.key} className="flex-1">
+                                      <div className={`h-1.5 rounded-full transition-all duration-500 ${idx <= currentStep ? 'bg-blue-600 dark:bg-blue-400' : 'bg-slate-200 dark:bg-slate-700'}`} />
+                                    </div>
+                                  ))}
+                                </div>
+                                <div className="flex justify-between mt-1">
+                                  {STATUS_STEPS.map((step, idx) => (
+                                    <span key={step.key} className={`text-[9px] font-semibold truncate ${idx <= currentStep ? 'text-blue-600 dark:text-blue-400' : 'text-slate-300 dark:text-slate-700'}`}>
+                                      {step.short}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )
+                          })()}
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -293,25 +365,7 @@ export default function DashboardPage() {
                         <a
                           href="#"
                           className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md shadow-emerald-600/20 transition-all duration-300 hover:scale-105 active:scale-95 inline-flex items-center gap-2"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            if (!booking.report_path) { toast.info("Report generating..."); return; }
-                            fetch(`${API_BASE_URL}/api/patient/reports/${booking.report_path}`, {
-                              headers: { Authorization: `Bearer ${authToken}` }
-                            })
-                              .then(res => {
-                                if (res.ok) return res.blob();
-                                throw new Error("Download failed");
-                              })
-                              .then(blob => {
-                                const url = window.URL.createObjectURL(blob);
-                                const a = document.createElement('a');
-                                a.href = url;
-                                a.download = booking.report_path.split('_').slice(2).join('_');
-                                a.click();
-                              })
-                              .catch(() => toast.error("Failed to download report."));
-                          }}
+                          onClick={() => handleDownloadReport(booking)}
                         >
                           Download
                         </a>

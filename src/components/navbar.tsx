@@ -2,17 +2,18 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation" // Added useRouter
-import { Menu, X, User, LogOut, Sun, Moon, Bell, ChevronDown } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { Menu, X, User, LogOut, Sun, Moon, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu"
 import { useTheme } from "next-themes"
-import { useStore } from "@/lib/store" // Added store import
+import { useStore } from "@/lib/store"
+import { NotificationBell } from "@/components/notification-bell"
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false)
-  const user = useStore((state) => state.user) // Get user from store
-  const logout = useStore((state) => state.logout) // Get logout action
+  const user = useStore((state) => state.user)
+  const logout = useStore((state) => state.logout)
   const router = useRouter()
 
   const { theme, setTheme } = useTheme()
@@ -65,11 +66,11 @@ export function Navbar() {
               </button>
             )}
             {user ? (
-              <div className="flex items-center gap-4">
-                <button className="relative p-2 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 rounded-full transition-colors group">
-                  <Bell className="w-5 h-5 group-hover:animate-swing" />
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-950"></span>
-                </button>
+              <div className="flex items-center gap-3">
+                {/* Notification Bell */}
+                <NotificationBell />
+
+                {/* User Dropdown */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button className="flex items-center gap-2 pl-3 pr-2 py-1.5 rounded-full bg-slate-50 border border-slate-200 hover:bg-slate-100 hover:border-slate-300 dark:bg-slate-900 dark:border-slate-800 dark:hover:bg-slate-800 transition-all font-semibold text-sm text-slate-700 dark:text-slate-200">
@@ -154,10 +155,9 @@ export function Navbar() {
                       <p className="text-sm font-semibold text-slate-900 dark:text-white">{(user as any).name || 'Patient'}</p>
                       <p className="text-xs text-slate-500 dark:text-slate-400">{user.email}</p>
                     </div>
-                    <button className="ml-auto p-2 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 rounded-full transition-colors relative">
-                      <Bell className="w-5 h-5" />
-                      <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-950"></span>
-                    </button>
+                    <div className="ml-auto">
+                      <NotificationBell />
+                    </div>
                   </div>
                   <Link href="/patient/dashboard">
                     <Button variant="outline" className="w-full justify-start text-blue-900 dark:text-blue-400 font-bold border-slate-200 dark:border-slate-800">
@@ -192,22 +192,24 @@ export function Navbar() {
               )}
             </div>
             {mounted && (
-              <button
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
-                title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-              >
-                {theme === "dark" ? (
-                  <Sun className="w-5 h-5 text-yellow-500" />
-                ) : (
-                  <Moon className="w-5 h-5 text-slate-600" />
-                )}
-              </button>
+              <div className="px-4">
+                <button
+                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+                  title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+                >
+                  {theme === "dark" ? (
+                    <Sun className="w-5 h-5 text-yellow-500" />
+                  ) : (
+                    <Moon className="w-5 h-5 text-slate-600" />
+                  )}
+                </button>
+              </div>
             )}
           </div>
         )}
       </div>
-    </nav >
+    </nav>
   )
 }
 

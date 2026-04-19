@@ -53,10 +53,11 @@ export default function AdminLoginPage() {
     }
 
     return (
-        <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
-            <div className="bg-white w-full max-w-md rounded-lg shadow-2xl overflow-hidden">
-                <div className="bg-blue-900 p-8 text-center">
-                    <div className="mx-auto bg-blue-800 w-16 h-16 rounded-full flex items-center justify-center mb-4">
+        <div className="min-h-screen bg-slate-100 dark:bg-slate-950 flex items-center justify-center p-4 transition-colors duration-500">
+            <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in duration-500">
+                <div className="bg-blue-900 dark:bg-blue-950 p-8 text-center relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.1),transparent)] pointer-events-none" />
+                    <div className="mx-auto bg-blue-800/50 dark:bg-blue-900/50 w-16 h-16 rounded-2xl flex items-center justify-center mb-4 backdrop-blur-sm border border-white/10">
                         <ShieldCheck className="w-8 h-8 text-white" />
                     </div>
                     <h1 className="text-2xl font-bold text-white">Admin Portal</h1>
@@ -72,36 +73,38 @@ export default function AdminLoginPage() {
                         )}
 
                         <div className="space-y-2">
-                            <label htmlFor="username" className="block text-sm font-medium text-gray-700">Username</label>
+                            <label htmlFor="username" className="block text-sm font-bold text-slate-700 dark:text-slate-300">Username</label>
                             <Input
                                 id="username"
                                 type="text"
                                 placeholder="Enter admin username"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
+                                className="bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 focus:ring-2 focus:ring-blue-500 rounded-xl"
                                 required
                             />
                         </div>
 
                         <div className="space-y-2">
-                            <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
+                            <label htmlFor="password" className="block text-sm font-bold text-slate-700 dark:text-slate-300">Password</label>
                             <Input
                                 id="password"
                                 type="password"
                                 placeholder="••••••••"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
+                                className="bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 focus:ring-2 focus:ring-blue-500 rounded-xl"
                                 required
                             />
                         </div>
 
-                        <Button type="submit" className="w-full bg-blue-900 hover:bg-blue-800" disabled={loading}>
+                        <Button type="submit" className="w-full bg-blue-900 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-500 h-12 rounded-xl text-lg font-bold shadow-lg shadow-blue-500/20" disabled={loading}>
                             {loading ? "Authenticating..." : "Login to Dashboard"}
                         </Button>
                     </form>
                 </div>
 
-                <div className="bg-gray-50 p-4 text-center text-xs text-gray-500 border-t border-gray-100">
+                <div className="bg-slate-50 dark:bg-slate-950/50 p-4 text-center text-xs text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800">
                     Authorized personnel only. All activities are monitored.
                 </div>
             </div>
