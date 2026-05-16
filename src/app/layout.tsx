@@ -40,7 +40,33 @@ export default function RootLayout({
   )
 }
 
-export const metadata = {
-  generator: 'v0.app'
+import type { Metadata, Viewport } from "next"
+
+export const viewport: Viewport = {
+  themeColor: "#ffffff",
+  width: "device-width",
+  initialScale: 1,
+}
+
+export const metadata: Metadata = {
+  title: {
+    default: "Rahila Labs | Premium Pathology Services",
+    template: "%s | Rahila Labs",
+  },
+  description: "Advanced diagnostic testing and pathology services. Book appointments, track samples, and view reports online with Rahila Labs.",
+  keywords: ["pathology", "blood test", "diagnostic center", "health checkup", "medical labs"],
+  authors: [{ name: "Rahila Labs" }],
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://rahilalabs.com",
+    title: "Rahila Labs | Premium Pathology Services",
+    description: "Advanced diagnostic testing and pathology services. Book appointments, track samples, and view reports online with Rahila Labs.",
+    siteName: "Rahila Labs",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Rahila Labs | Premium Pathology Services",
+    description: "Advanced diagnostic testing and pathology services. Book appointments, track samples, and view reports online with Rahila Labs.",
+  },
 };
-console.log('Dummy change for deployment test');

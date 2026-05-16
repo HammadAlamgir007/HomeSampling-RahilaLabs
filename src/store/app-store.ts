@@ -36,20 +36,7 @@ interface StoreState {
     closeSidebar: () => void
 }
 
-const _mockTests: Test[] = [
-    { id: '1', name: 'Complete Blood Count', price: 499, description: 'Full CBC with differential', sampleType: 'Blood', turnaroundTime: '24 hours' },
-    { id: '2', name: 'Thyroid Profile', price: 799, description: 'TSH, T3, T4 levels', sampleType: 'Blood', turnaroundTime: '24 hours' },
-    { id: '3', name: 'Lipid Profile', price: 599, description: 'Cholesterol and triglycerides', sampleType: 'Blood', turnaroundTime: '24 hours' },
-    { id: '4', name: 'Liver Function Test', price: 699, description: 'SGPT, SGOT, Bilirubin', sampleType: 'Blood', turnaroundTime: '24 hours' },
-    { id: '5', name: 'Kidney Function Test', price: 649, description: 'Creatinine, Urea, BUN', sampleType: 'Blood', turnaroundTime: '24 hours' },
-    { id: '6', name: 'Diabetes Screening', price: 549, description: 'Fasting glucose and HbA1c', sampleType: 'Blood', turnaroundTime: '24 hours' },
-]
 
-const _mockAppointments: Appointment[] = [
-    { id: 'apt1', patientId: 'p1', patientName: 'Ali Ahmed', testName: 'Complete Blood Count', testId: '1', date: '2024-01-15', time: '10:00', status: 'pending' },
-    { id: 'apt2', patientId: 'p2', patientName: 'Fatima Khan', testName: 'Thyroid Profile', testId: '2', date: '2024-01-15', time: '11:30', status: 'collected' },
-    { id: 'apt3', patientId: 'p3', patientName: 'Hassan Ali', testName: 'Lipid Profile', testId: '3', date: '2024-01-16', time: '14:00', status: 'completed' },
-]
 
 export const useStore = create<StoreState>()(
     persist(
@@ -58,11 +45,11 @@ export const useStore = create<StoreState>()(
             bookings: [],
             isAuthenticated: false,
             authToken: null,
-            tests: _mockTests,
+            tests: [],
             darkMode: false,
             userRole: 'patient',
             admin: null,
-            appointments: _mockAppointments,
+            appointments: [],
             reports: [],
             isSidebarOpen: false,
             setUser: (user) => set({ user, isAuthenticated: !!user }),

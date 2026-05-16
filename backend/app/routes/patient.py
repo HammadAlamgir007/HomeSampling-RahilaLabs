@@ -1,7 +1,7 @@
 import os
 from flask import Blueprint, request, jsonify, send_from_directory, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.models import db, Test, Appointment, User
 from app.extensions import limiter
@@ -13,8 +13,22 @@ patient_bp = Blueprint('patient', __name__)
 
 @patient_bp.route('/tests', methods=['GET'])
 def get_tests():
-    tests = Test.query.all()
-    return jsonify([test.to_dict() for test in tests]), 200
+    limit = request.args.get('limit', type=int)
+    offset = request.args.get('offset', 0, type=int)
+    
+    query = Test.query
+    if limit is not None:
+        query = query.offset(offset).limit(limit)
+        
+    tests = query.all()
+    total = Test.query.count()
+    
+    return jsonify({
+        'tests': [test.to_dict() for test in tests],
+        'total': total,
+        'limit': limit,
+        'offset': offset
+    }), 200
 
 
 @patient_bp.route('/book', methods=['POST'])
@@ -132,7 +146,7 @@ def download_report(filename):
         # Report expiry: 30 days after upload (using created_at as proxy if no uploaded_at)
         if appointment.created_at:
             expiry = appointment.created_at + dt.timedelta(days=30)
-            if dt.datetime.utcnow() > expiry:
+            if dt.datetime.now(timezone.utc) > expiry:
                 return jsonify({
                     'error': 'Report has expired (30 days). Please contact the lab to request a new copy.',
                     'expired': True

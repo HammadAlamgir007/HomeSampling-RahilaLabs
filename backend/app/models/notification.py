@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from .base import db
 
 
@@ -6,8 +6,8 @@ class Notification(db.Model):
     id = db.Column(db.Integer, primary_key=True)
 
     # Recipient (can be user, rider, or admin)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    rider_id = db.Column(db.Integer, db.ForeignKey('rider.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), index=True)
+    rider_id = db.Column(db.Integer, db.ForeignKey('rider.id'), index=True)
 
     # Related appointment
     appointment_id = db.Column(db.Integer, db.ForeignKey('appointment.id'))
@@ -19,7 +19,7 @@ class Notification(db.Model):
     # Status
     is_read = db.Column(db.Boolean, default=False)
 
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Relationships
     user = db.relationship('User', backref=db.backref('notifications', lazy=True))

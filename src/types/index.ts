@@ -37,7 +37,7 @@ export type UserRole = 'patient' | 'admin' | 'staff' | 'technician'
 
 export interface User {
     id: string
-    name: string
+    username: string
     email: string
     phone: string
     dateOfBirth: string

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from .base import db
 
 
@@ -19,13 +19,11 @@ class Rider(db.Model):
     profile_photo = db.Column(db.String(255))
 
     # Timestamps
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
-    def to_dict(self, include_stats=False):
-        from .appointment import Appointment  # local import to avoid circular dependency
-
-        data = {
+    def to_dict(self):
+        return {
             'id': self.id,
             'name': self.name,
             'email': self.email,
@@ -39,21 +37,3 @@ class Rider(db.Model):
             'profile_photo': self.profile_photo,
             'created_at': self.created_at.isoformat(),
         }
-
-        if include_stats:
-            completed_tasks = Appointment.query.filter_by(
-                rider_id=self.id, status='delivered_to_lab'
-            ).count()
-            pending_tasks = Appointment.query.filter(
-                Appointment.rider_id == self.id,
-                Appointment.status.in_([
-                    'rider_accepted', 'rider_on_way',
-                    'rider_arrived', 'sample_collected',
-                ]),
-            ).count()
-            data['stats'] = {
-                'completed_tasks': completed_tasks,
-                'pending_tasks': pending_tasks,
-            }
-
-        return data

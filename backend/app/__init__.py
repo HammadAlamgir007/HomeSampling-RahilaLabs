@@ -4,6 +4,7 @@ Creates and configures the Flask app instance.
 """
 import logging
 import os
+import secrets
 from logging.handlers import RotatingFileHandler
 
 from flask import Flask, jsonify, request
@@ -23,9 +24,10 @@ def create_app(config_name=None):
 
     # JWT cookie settings
     app.config['JWT_TOKEN_LOCATION'] = ['headers', 'cookies']
-    app.config['JWT_COOKIE_SECURE'] = False        # Set True in production (HTTPS)
+    app.config['JWT_COOKIE_SECURE'] = not app.debug   # True in production (HTTPS)
     app.config['JWT_COOKIE_CSRF_PROTECT'] = True
     app.config['JWT_CSRF_IN_COOKIES'] = True
+    app.config['JWT_COOKIE_SAMESITE'] = 'Lax'
 
     # Configure logging (only outside debug mode)
     _configure_logging(app)
@@ -35,22 +37,17 @@ def create_app(config_name=None):
     jwt.init_app(app)
     limiter.init_app(app)
 
-    # CORS — allow all origins / headers during development
+    # CORS — restrict to allowed origins (configurable via CORS_ORIGINS env var)
+    _allowed_origins = os.environ.get(
+        'CORS_ORIGINS',
+        'http://localhost:3000,http://127.0.0.1:3000'
+    ).split(',')
     CORS(app, resources={r"/*": {
-        "origins": "*",
+        "origins": [o.strip() for o in _allowed_origins],
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization", "X-CSRF-TOKEN"],
         "supports_credentials": True,
     }})
-
-    # Explicit CORS headers after each response (needed for Flutter Web preflight)
-    @app.after_request
-    def add_cors_headers(response):
-        response.headers['Access-Control-Allow-Origin'] = request.headers.get('Origin', '*')
-        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-CSRF-TOKEN'
-        response.headers['Access-Control-Allow-Credentials'] = 'true'
-        return response
 
     # JWT error handlers
     _register_jwt_handlers(app, jwt)
@@ -72,11 +69,14 @@ def create_app(config_name=None):
 
         import traceback
         app.logger.error(f'Unhandled Exception: {str(e)}\n{traceback.format_exc()}')
-        return jsonify({
+        error_response = {
             "success": False,
             "message": "An unexpected error occurred.",
-            "error": str(e)
-        }), 500
+        }
+        # Only expose error details in debug mode
+        if app.debug:
+            error_response["error"] = str(e)
+        return jsonify(error_response), 500
 
     # Initialize DB (create tables + seed initial data)
     with app.app_context():
@@ -92,7 +92,7 @@ def _configure_logging(app: Flask):
     if not app.debug:
         log_path = os.path.join(os.path.dirname(__file__), '..', 'logs', 'backend.log')
         os.makedirs(os.path.dirname(log_path), exist_ok=True)
-        handler = RotatingFileHandler(log_path, maxBytes=10240, backupCount=5)
+        handler = RotatingFileHandler(log_path, maxBytes=10 * 1024 * 1024, backupCount=10)
         handler.setFormatter(logging.Formatter(
             '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
         ))
@@ -103,7 +103,17 @@ def _configure_logging(app: Flask):
 
 
 def _register_jwt_handlers(app: Flask, jwt_manager):
-    """Register JWT error callbacks."""
+    """Register JWT error callbacks and token blocklist."""
+    from .utils.blocklist import is_token_revoked
+
+    @jwt_manager.token_in_blocklist_loader
+    def check_if_token_revoked(jwt_header, jwt_payload):
+        return is_token_revoked(jwt_payload['jti'])
+
+    @jwt_manager.revoked_token_loader
+    def revoked_token_callback(jwt_header, jwt_payload):
+        return jsonify({'msg': 'Token has been revoked', 'error': 'token_revoked'}), 401
+
     @jwt_manager.invalid_token_loader
     def invalid_token_callback(error):
         return jsonify({'msg': 'Invalid token', 'error': error}), 422
@@ -124,122 +134,59 @@ def _register_blueprints(app: Flask):
     from .routes.admin import admin_bp
     from .routes.rider import rider_bp
     from .routes.contact import contact_bp
+    from .controllers import booking_bp
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(patient_bp, url_prefix='/api/patient')
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
     app.register_blueprint(rider_bp, url_prefix='/api/rider')
     app.register_blueprint(contact_bp, url_prefix='/api')
+    app.register_blueprint(booking_bp, url_prefix='/api')
 
 
 def _register_utility_routes(app: Flask):
-    """Register health check and maintenance routes."""
-    import os
+    """Register health check route."""
 
     @app.route('/health')
     def health_check():
-        return jsonify({'status': 'ok', 'message': 'Rahila Labs Backend is running'})
-
-    @app.route('/api/reset-db')
-    def reset_db():
-        """
-        DROP all tables and recreate them fresh.
-        Protected by ?key= query param.
-        DELETE THIS ROUTE after running it once on production.
-        """
-        from .models import User, Test, Rider
-        from werkzeug.security import generate_password_hash as gph
-
-        secret = request.args.get('key', '')
-        expected = os.environ.get('SECRET_KEY', 'dev-secret-key-change-this')
-        if secret != expected:
-            return jsonify({'error': 'Unauthorized'}), 403
-
+        from sqlalchemy import text
         try:
-            db.drop_all()
-            db.create_all()
-            tests = [
-                Test(name="Complete Blood Count", description="Full blood work analysis", price=1500),
-                Test(name="Thyroid Profile", description="Thyroid function tests", price=2000),
-                Test(name="Lipid Profile", description="Cholesterol and lipid levels", price=1800),
-                Test(name="Liver Function", description="Liver health assessment", price=2200),
-            ]
-            db.session.bulk_save_objects(tests)
-            admin = User(
-                username="admin", email="admin@rahilalabs.com",
-                password_hash=gph("admin123"), role="admin",
-                status="active", is_verified=True,
-                mrn="SYS-ADMIN-00"
-            )
-            db.session.add(admin)
-            riders = [
-                Rider(name="Ahmed Khan", email="ahmed@rider.com", phone="03001234567",
-                      password_hash=gph("rider123"), availability_status="available"),
-                Rider(name="Hassan Ali", email="hassan@rider.com", phone="03009876543",
-                      password_hash=gph("rider123"), availability_status="available"),
-            ]
-            db.session.bulk_save_objects(riders)
-            db.session.commit()
-            return jsonify({'message': '✅ Database reset and reseeded successfully.'}), 200
-        except Exception as e:
-            db.session.rollback()
-            return jsonify({'error': str(e)}), 500
+            db.session.execute(text('SELECT 1'))
+            return jsonify({'status': 'ok', 'message': 'Rahila Labs Backend is running', 'db': 'connected'})
+        except Exception:
+            return jsonify({'status': 'unhealthy', 'message': 'Database connection failed', 'db': 'disconnected'}), 503
+
+
+def _get_seed_password(env_var, fallback_label):
+    """Get seed password from env var, or generate a secure random one."""
+    pw = os.environ.get(env_var)
+    if pw:
+        return pw
+    # Generate a secure random password for first-time seeding
+    generated = secrets.token_urlsafe(16)
+    logging.getLogger(__name__).warning(
+        f"⚠ No {env_var} set — generated random {fallback_label} password. "
+        f"Set {env_var} in .env to use a fixed password."
+    )
+    return generated
 
 
 def _init_db(app: Flask):
     """Create all tables and seed initial data if the database is empty."""
     from .models import User, Test, Rider, Appointment
     from werkzeug.security import generate_password_hash
-    from datetime import datetime
+    from datetime import datetime, timezone
 
     try:
         db.create_all()
 
-        # --- Safe column migration ---
-        # Add new columns to the `test` table if they don't already exist.
-        # Uses SQL Server's IF NOT EXISTS check so it's safe to run every startup.
-        from sqlalchemy import text
-        migration_statements = [
-            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('test') AND name = 'code') ALTER TABLE [test] ADD code VARCHAR(20) NULL",
-            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('test') AND name = 'category') ALTER TABLE [test] ADD category VARCHAR(100) NULL",
-            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('test') AND name = 'specimen') ALTER TABLE [test] ADD specimen VARCHAR(100) NULL",
-            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('test') AND name = 'reporting_time') ALTER TABLE [test] ADD reporting_time VARCHAR(50) NULL",
-            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('appointment') AND name = 'booking_order_id') ALTER TABLE [appointment] ADD booking_order_id VARCHAR(50) NULL",
-            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('appointment') AND name = 'report_path') ALTER TABLE [appointment] ADD report_path VARCHAR(255) NULL",
-            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('appointment') AND name = 'rider_id') ALTER TABLE [appointment] ADD rider_id INT NULL",
-            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('appointment') AND name = 'rider_assigned_at') ALTER TABLE [appointment] ADD rider_assigned_at DATETIME NULL",
-            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('appointment') AND name = 'rider_accepted_at') ALTER TABLE [appointment] ADD rider_accepted_at DATETIME NULL",
-            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('appointment') AND name = 'rider_rejected_at') ALTER TABLE [appointment] ADD rider_rejected_at DATETIME NULL",
-            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('appointment') AND name = 'rejection_reason') ALTER TABLE [appointment] ADD rejection_reason VARCHAR(200) NULL",
-            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('appointment') AND name = 'patient_latitude') ALTER TABLE [appointment] ADD patient_latitude FLOAT NULL",
-            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('appointment') AND name = 'patient_longitude') ALTER TABLE [appointment] ADD patient_longitude FLOAT NULL",
-            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('appointment') AND name = 'arrived_at') ALTER TABLE [appointment] ADD arrived_at DATETIME NULL",
-            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('appointment') AND name = 'sample_collected_at') ALTER TABLE [appointment] ADD sample_collected_at DATETIME NULL",
-            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('appointment') AND name = 'sample_photo') ALTER TABLE [appointment] ADD sample_photo VARCHAR(255) NULL",
-            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('appointment') AND name = 'collection_notes') ALTER TABLE [appointment] ADD collection_notes TEXT NULL",
-            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('appointment') AND name = 'collection_latitude') ALTER TABLE [appointment] ADD collection_latitude FLOAT NULL",
-            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('appointment') AND name = 'collection_longitude') ALTER TABLE [appointment] ADD collection_longitude FLOAT NULL",
-            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('appointment') AND name = 'delivered_at') ALTER TABLE [appointment] ADD delivered_at DATETIME NULL",
-            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('appointment') AND name = 'pickup_deadline') ALTER TABLE [appointment] ADD pickup_deadline DATETIME NULL",
-            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('appointment') AND name = 'delivery_deadline') ALTER TABLE [appointment] ADD delivery_deadline DATETIME NULL",
-            "IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('appointment') AND name = 'priority_level') ALTER TABLE [appointment] ADD priority_level VARCHAR(20) NULL",
-        ]
-        # for stmt in migration_statements:
-        #     try:
-        #         db.session.execute(text(stmt))
-        #         db.session.commit()
-        #     except Exception as col_err:
-        #         db.session.rollback()
-        #         app.logger.warning(f"Column migration warning: {col_err}")
-        # app.logger.info("DB column migration check complete")
-        # Skip seeding demo tests here so seed_from_json can handle it.
-
         # Seed admin
         if not User.query.filter_by(role='admin').first():
+            admin_pw = _get_seed_password('DEFAULT_ADMIN_PASSWORD', 'admin')
             admin = User(
                 username="admin",
                 email="admin@rahilalabs.com",
-                password_hash=generate_password_hash("admin123"),
+                password_hash=generate_password_hash(admin_pw),
                 role="admin", status="active", is_verified=True,
                 mrn="SYS-ADMIN-01"
             )
@@ -249,9 +196,10 @@ def _init_db(app: Flask):
 
         # Seed demo patient & appointment
         if not User.query.filter_by(email='ali@example.com').first():
+            demo_pw = _get_seed_password('DEFAULT_DEMO_PASSWORD', 'demo patient')
             patient = User(
                 username="ali", email="ali@example.com",
-                password_hash=generate_password_hash("password"),
+                password_hash=generate_password_hash(demo_pw),
                 role="patient", phone="1234567890", city="Lahore", is_verified=True,
                 mrn="SYS-PATIENT-01"
             )
@@ -262,7 +210,7 @@ def _init_db(app: Flask):
             if test:
                 appt = Appointment(
                     user_id=patient.id, test_id=test.id,
-                    appointment_date=datetime.utcnow(),
+                    appointment_date=datetime.now(timezone.utc),
                     status="pending", address="123 Main St, Lahore"
                 )
                 db.session.add(appt)
@@ -271,11 +219,12 @@ def _init_db(app: Flask):
 
         # Seed demo riders
         if not Rider.query.first():
+            rider_pw = _get_seed_password('DEFAULT_RIDER_PASSWORD', 'rider')
             riders = [
                 Rider(name="Ahmed Khan", email="ahmed@rider.com", phone="03001234567",
-                      password_hash=generate_password_hash("rider123"), availability_status="available"),
+                      password_hash=generate_password_hash(rider_pw), availability_status="available"),
                 Rider(name="Hassan Ali", email="hassan@rider.com", phone="03009876543",
-                      password_hash=generate_password_hash("rider123"), availability_status="available"),
+                      password_hash=generate_password_hash(rider_pw), availability_status="available"),
             ]
             db.session.bulk_save_objects(riders)
             db.session.commit()

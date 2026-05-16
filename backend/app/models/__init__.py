@@ -8,11 +8,13 @@ from .otp import OTP
 from .rider import Rider
 from .test import Test
 from .appointment import Appointment, log_task_status_change
+from .booking import Booking
+from .booking_item import BookingItem
 from .task_log import TaskLog
 from .notification import Notification
 
 __all__ = [
     'db', 'User', 'OTP', 'Rider', 'Test',
-    'Appointment', 'TaskLog', 'Notification',
+    'Appointment', 'Booking', 'BookingItem', 'TaskLog', 'Notification',
     'log_task_status_change',
 ]

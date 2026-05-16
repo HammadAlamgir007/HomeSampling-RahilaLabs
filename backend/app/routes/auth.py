@@ -2,9 +2,9 @@ from flask import Blueprint, request, make_response
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import create_access_token, set_access_cookies, unset_jwt_cookies
 from email_validator import validate_email, EmailNotValidError
-import random
+import secrets
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from app.models import db, User, OTP
 from app.extensions import limiter
@@ -43,8 +43,8 @@ def send_otp():
     if User.query.filter_by(email=email).first():
         return api_response(False, "Email already exists", field="email", status_code=409)
 
-    otp_code = str(random.randint(100000, 999999))
-    expires_at = datetime.utcnow() + timedelta(minutes=10)
+    otp_code = str(secrets.randbelow(900000) + 100000)
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
 
     existing_otp = OTP.query.filter_by(email=email, purpose='registration').first()
     if existing_otp:
@@ -104,7 +104,7 @@ def register():
     if not otp_record:
         return api_response(False, "No OTP requested for this email", field="otp_code", status_code=400)
 
-    if datetime.utcnow() > otp_record.expires_at:
+    if datetime.now(timezone.utc) > otp_record.expires_at:
         return api_response(False, "OTP code has expired", field="otp_code", status_code=400)
 
     if otp_record.attempts >= 5:
@@ -153,9 +153,9 @@ def login():
     if not user:
         return api_response(False, "Invalid credentials", status_code=401)
 
-    if user.locked_until and user.locked_until > datetime.utcnow():
+    if user.locked_until and user.locked_until > datetime.now(timezone.utc):
         return api_response(False, "Too many attempts. Try again in 15 minutes.", status_code=429)
-    elif user.locked_until and user.locked_until <= datetime.utcnow():
+    elif user.locked_until and user.locked_until <= datetime.now(timezone.utc):
         user.locked_until = None
         user.failed_login_attempts = 0
         db.session.commit()
@@ -163,7 +163,7 @@ def login():
     if not check_password_hash(user.password_hash, password):
         user.failed_login_attempts += 1
         if user.failed_login_attempts >= 5:
-            user.locked_until = datetime.utcnow() + timedelta(minutes=15)
+            user.locked_until = datetime.now(timezone.utc) + timedelta(minutes=15)
             db.session.commit()
             return api_response(False, "Too many attempts. Try again in 15 minutes.", status_code=429)
         db.session.commit()
@@ -199,6 +199,13 @@ def login():
 
 @auth_bp.route('/logout', methods=['POST'])
 def logout():
+    from flask_jwt_extended import get_jwt
+    from app.utils.blocklist import add_token_to_blocklist
+    try:
+        jti = get_jwt()['jti']
+        add_token_to_blocklist(jti)
+    except Exception:
+        pass  # Token may not be present (already expired or missing)
     response, status = api_response(True, "Successfully logged out", status_code=200)
     response_obj = make_response(response)
     unset_jwt_cookies(response_obj)
@@ -220,8 +227,8 @@ def forgot_password():
     if not user:
         return api_response(True, generic_msg, status_code=200)
 
-    otp_code = str(random.randint(100000, 999999))
-    expires_at = datetime.utcnow() + timedelta(minutes=10)
+    otp_code = str(secrets.randbelow(900000) + 100000)
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
 
     existing_otp = OTP.query.filter_by(email=email, purpose='reset_password').first()
     if existing_otp:
@@ -262,7 +269,7 @@ def reset_password():
         return api_response(False, "Password must be at least 8 characters long, including an uppercase letter, a lowercase letter, a number, and a special character.", field="password", status_code=400)
 
     otp_record = OTP.query.filter_by(email=email, purpose='reset_password').first()
-    if not otp_record or datetime.utcnow() > otp_record.expires_at:
+    if not otp_record or datetime.now(timezone.utc) > otp_record.expires_at:
         return api_response(False, "Invalid or expired OTP", field="otp_code", status_code=400)
 
     if otp_record.attempts >= 5:

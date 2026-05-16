@@ -1,5 +1,5 @@
 import json as _json
-from datetime import datetime
+from datetime import datetime, timezone
 from .base import db
 
 
@@ -26,7 +26,7 @@ class TaskLog(db.Model):
     # Free-form metadata (JSON string — notes, photo path, etc.)
     log_meta = db.Column(db.Text, nullable=True)  # 'metadata' is reserved by SQLAlchemy
 
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Relationships
     appointment = db.relationship(

@@ -17,18 +17,27 @@ export default function Home() {
   const [tests, setTests] = useState<any[]>([])
 
   useEffect(() => {
+    const controller = new AbortController()
+    const signal = controller.signal
+
     const fetchTests = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/patient/tests`)
+        const res = await fetch(`${API_BASE_URL}/api/patient/tests`, { signal })
         if (res.ok) {
           const data = await res.json()
-          setTests(data.slice(0, 8)) // Get 8 featured tests
+          const testsArray = Array.isArray(data.tests) ? data.tests : (Array.isArray(data) ? data : [])
+          setTests(testsArray.slice(0, 8)) // Get 8 featured tests
         }
-      } catch (error) {
+      } catch (error: any) {
+        if (error.name === 'AbortError') return
         console.error("Failed to fetch featured tests", error)
       }
     }
     fetchTests()
+
+    return () => {
+      controller.abort()
+    }
   }, [])
 
   const handleBookNow = (id: string) => {

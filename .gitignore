@@ -86,3 +86,13 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 backend/.env
+
+# ── Release artifacts ─────────────────────────────────────────────────────────
+backend-release.zip
+frontend-release.zip
+*.zip
+
+# ── Scratch & Utils ──────────────────────────────────────────────────────────
+backend/scratch/
+refactor_admin.py
+split_admin.py

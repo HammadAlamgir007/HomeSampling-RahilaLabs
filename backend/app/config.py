@@ -35,6 +35,29 @@ class ProductionConfig(BaseConfig):
     TESTING = False
     JWT_COOKIE_SECURE = True        # Enforce HTTPS cookies in production
 
+    def __init__(self):
+        super().__init__()
+        # Fail fast if production runs with insecure defaults
+        if self.SECRET_KEY in ('dev-secret-key-change-this', None, ''):
+            raise RuntimeError(
+                "SECRET_KEY is not set or uses insecure default. "
+                "Set a strong SECRET_KEY in your environment before running in production."
+            )
+        if self.JWT_SECRET_KEY in ('jwt-secret-key-change-this', None, ''):
+            raise RuntimeError(
+                "JWT_SECRET_KEY is not set or uses insecure default. "
+                "Set a strong JWT_SECRET_KEY in your environment before running in production."
+            )
+            
+        # Production DB connection pooling
+        if self.SQLALCHEMY_DATABASE_URI and not self.SQLALCHEMY_DATABASE_URI.startswith('sqlite:'):
+            self.SQLALCHEMY_ENGINE_OPTIONS = {
+                'pool_size': int(os.environ.get('DB_POOL_SIZE', 10)),
+                'pool_recycle': int(os.environ.get('DB_POOL_RECYCLE', 3600)),
+                'pool_pre_ping': True,
+                'max_overflow': int(os.environ.get('DB_MAX_OVERFLOW', 20)),
+            }
+
 
 class TestingConfig(BaseConfig):
     TESTING = True

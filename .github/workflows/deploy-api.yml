@@ -17,6 +17,17 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Install dependencies and run tests
+        run: |
+          cd backend
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          PYTHONPATH=. pytest tests/
+        env:
+          SECRET_KEY: test_secret_key
+          JWT_SECRET_KEY: test_jwt_secret_key
+          DEFAULT_ADMIN_PASSWORD: password123
+
       - name: Zip backend application
         run: |
           cd backend

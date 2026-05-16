@@ -43,7 +43,8 @@ export default function TestsPage() {
       })
       if (res.ok) {
         const data = await res.json()
-        setTests(data)
+        const testsArray = Array.isArray(data.tests) ? data.tests : (Array.isArray(data) ? data : [])
+        setTests(testsArray)
       }
     } catch (error) {
       console.error("Failed to fetch tests")

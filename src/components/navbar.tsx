@@ -57,6 +57,7 @@ export function Navbar() {
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
                 className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
                 title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+                aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
               >
                 {theme === "dark" ? (
                   <Sun className="w-5 h-5 text-yellow-500" />
@@ -75,15 +76,15 @@ export function Navbar() {
                   <DropdownMenuTrigger asChild>
                     <button className="flex items-center gap-2 pl-3 pr-2 py-1.5 rounded-full bg-slate-50 border border-slate-200 hover:bg-slate-100 hover:border-slate-300 dark:bg-slate-900 dark:border-slate-800 dark:hover:bg-slate-800 transition-all font-semibold text-sm text-slate-700 dark:text-slate-200">
                       <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-700 dark:text-blue-400 overflow-hidden">
-                        {(user as any).name ? (user as any).name.charAt(0).toUpperCase() : <User className="w-3.5 h-3.5" />}
+                        {user.username ? user.username.charAt(0).toUpperCase() : <User className="w-3.5 h-3.5" />}
                       </div>
-                      <span className="max-w-[100px] truncate">{(user as any).name || 'Patient'}</span>
+                      <span className="max-w-[100px] truncate">{user.username || 'Patient'}</span>
                       <ChevronDown className="w-4 h-4 text-slate-400" />
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56 mt-2 rounded-xl">
                     <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800">
-                      <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{(user as any).name || 'Patient Profile'}</p>
+                      <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{user.username || 'Patient Profile'}</p>
                       <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user.email}</p>
                     </div>
                     <div className="p-1">
@@ -121,7 +122,7 @@ export function Navbar() {
           </div>
 
           {/* Mobile Menu Button */}
-          <button className="md:hidden" onClick={() => setIsOpen(!isOpen)}>
+          <button className="md:hidden" aria-label={isOpen ? "Close menu" : "Open menu"} onClick={() => setIsOpen(!isOpen)}>
             {isOpen ? <X /> : <Menu />}
           </button>
         </div>
@@ -149,10 +150,10 @@ export function Navbar() {
                 <>
                   <div className="flex items-center gap-3 mb-2">
                     <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-700 dark:text-blue-400">
-                      {(user as any).name ? (user as any).name.charAt(0).toUpperCase() : <User className="w-5 h-5" />}
+                      {user.username ? user.username.charAt(0).toUpperCase() : <User className="w-5 h-5" />}
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-slate-900 dark:text-white">{(user as any).name || 'Patient'}</p>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white">{user.username || 'Patient'}</p>
                       <p className="text-xs text-slate-500 dark:text-slate-400">{user.email}</p>
                     </div>
                     <div className="ml-auto">
@@ -197,6 +198,7 @@ export function Navbar() {
                   onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
                   className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
                   title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+                  aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
                 >
                   {theme === "dark" ? (
                     <Sun className="w-5 h-5 text-yellow-500" />

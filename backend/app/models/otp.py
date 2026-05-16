@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from .base import db
 
 
@@ -9,4 +9,4 @@ class OTP(db.Model):
     purpose = db.Column(db.String(50), default='registration')
     attempts = db.Column(db.Integer, default=0)
     expires_at = db.Column(db.DateTime, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))

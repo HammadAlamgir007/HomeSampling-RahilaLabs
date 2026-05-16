@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from app.models import db, Notification, User
 
 
@@ -11,7 +11,7 @@ def create_notification(user_id=None, rider_id=None, appointment_id=None, messag
         message=message,
         notification_type=notification_type,
         is_read=False,
-        created_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
     )
     db.session.add(notification)
     db.session.commit()

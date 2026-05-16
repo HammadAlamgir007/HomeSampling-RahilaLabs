@@ -1,22 +1,35 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from .base import db
 
 
 class Appointment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
     test_id = db.Column(db.Integer, db.ForeignKey('test.id'), nullable=False)
     appointment_date = db.Column(db.DateTime, nullable=False)
 
     booking_order_id = db.Column(db.String(50), unique=True, nullable=True)
 
     # Status: pending > rider_accepted > rider_on_way > rider_arrived > sample_collected > delivered_to_lab > completed
-    status = db.Column(db.String(30), default='pending')
+    status = db.Column(db.String(30), default='pending', index=True)
     address = db.Column(db.String(200), nullable=False)
     report_path = db.Column(db.String(255))  # Path to uploaded PDF
 
+    VALID_TRANSITIONS = {
+        'pending': ['confirmed', 'rider_accepted', 'cancelled'],
+        'confirmed': ['rider_accepted', 'cancelled'],
+        'rider_accepted': ['rider_on_way', 'rider_rejected', 'cancelled'],
+        'rider_on_way': ['rider_arrived', 'cancelled'],
+        'rider_arrived': ['sample_collected', 'cancelled'],
+        'sample_collected': ['delivered_to_lab', 'cancelled'],
+        'delivered_to_lab': ['completed', 'cancelled'],
+        'completed': [],
+        'cancelled': [],
+        'rider_rejected': ['rider_accepted', 'cancelled']
+    }
+
     # Rider assignment
-    rider_id = db.Column(db.Integer, db.ForeignKey('rider.id'))
+    rider_id = db.Column(db.Integer, db.ForeignKey('rider.id'), index=True)
     rider_assigned_at = db.Column(db.DateTime)
     rider_accepted_at = db.Column(db.DateTime)
     rider_rejected_at = db.Column(db.DateTime)
@@ -44,7 +57,7 @@ class Appointment(db.Model):
     delivery_deadline = db.Column(db.DateTime, nullable=True)
     priority_level = db.Column(db.String(20), default='normal')  # normal, urgent, critical
 
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Relationships
     user = db.relationship('User', backref=db.backref('appointments', lazy=True))
@@ -103,6 +116,36 @@ class Appointment(db.Model):
             )
 
         return data
+
+    def transition_status(self, new_status, changed_by_role, changed_by_id=None, rider_id=None, **kwargs):
+        """Safely transition the appointment to a new status and log it."""
+        if new_status not in self.VALID_TRANSITIONS.get(self.status, []):
+            raise ValueError(f"Invalid status transition from {self.status} to {new_status}")
+            
+        old_status = self.status
+        self.status = new_status
+        now = datetime.now(timezone.utc)
+        
+        if new_status == 'rider_accepted':
+            self.rider_accepted_at = now
+        elif new_status == 'rider_rejected':
+            self.rider_rejected_at = now
+        elif new_status == 'rider_arrived':
+            self.arrived_at = now
+        elif new_status == 'sample_collected':
+            self.sample_collected_at = now
+        elif new_status == 'delivered_to_lab':
+            self.delivered_at = now
+
+        log_task_status_change(
+            appointment_id=self.id,
+            from_status=old_status,
+            to_status=new_status,
+            changed_by_role=changed_by_role,
+            changed_by_id=changed_by_id,
+            rider_id=rider_id or self.rider_id,
+            **kwargs
+        )
 
 
 def log_task_status_change(

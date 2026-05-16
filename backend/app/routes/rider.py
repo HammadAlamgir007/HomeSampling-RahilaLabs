@@ -1,5 +1,5 @@
 import math
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
@@ -7,6 +7,8 @@ from werkzeug.security import check_password_hash
 
 from app.models import db, Rider, Appointment, log_task_status_change
 from app.utils.file_upload import save_sample_photo, save_rider_photo
+from app.utils.api import sanitize_email
+from app.extensions import limiter
 from app.utils.notifications import (
     notify_patient_rider_on_way,
     notify_admin_sample_collected,
@@ -44,12 +46,24 @@ def _require_rider():
     return int(get_jwt_identity()), None
 
 
+def _get_rider_with_stats(rider):
+    data = rider.to_dict()
+    completed = Appointment.query.filter_by(rider_id=rider.id, status='delivered_to_lab').count()
+    pending = Appointment.query.filter(
+        Appointment.rider_id == rider.id,
+        Appointment.status.in_(['rider_accepted', 'rider_on_way', 'rider_arrived', 'sample_collected'])
+    ).count()
+    data['stats'] = {'completed_tasks': completed, 'pending_tasks': pending}
+    return data
+
+
 # ── Auth ──────────────────────────────────────────────────────────────────────
 
 @rider_bp.route('/login', methods=['POST'])
+@limiter.limit("5 per minute")
 def rider_login():
     data = request.get_json()
-    email = data.get('email')
+    email = sanitize_email(data.get('email'))
     password = data.get('password')
     if not email or not password:
         return jsonify({'msg': 'Email and password required'}), 400
@@ -57,7 +71,7 @@ def rider_login():
     if not rider or not check_password_hash(rider.password_hash, password):
         return jsonify({'msg': 'Invalid credentials'}), 401
     access_token = create_access_token(identity=str(rider.id), additional_claims={'type': 'rider'})
-    return jsonify({'access_token': access_token, 'rider': rider.to_dict(include_stats=True)}), 200
+    return jsonify({'access_token': access_token, 'rider': _get_rider_with_stats(rider)}), 200
 
 
 # ── Profile ───────────────────────────────────────────────────────────────────
@@ -71,7 +85,7 @@ def get_profile():
     rider = Rider.query.get(rider_id)
     if not rider:
         return jsonify({'msg': 'Rider not found'}), 404
-    return jsonify(rider.to_dict(include_stats=True)), 200
+    return jsonify(_get_rider_with_stats(rider)), 200
 
 
 @rider_bp.route('/profile', methods=['PUT'])
@@ -88,7 +102,7 @@ def update_profile():
     if 'gps_latitude' in data and 'gps_longitude' in data:
         rider.gps_latitude = float(data['gps_latitude'])
         rider.gps_longitude = float(data['gps_longitude'])
-        rider.last_location_update = datetime.utcnow()
+        rider.last_location_update = datetime.now(timezone.utc)
     if 'availability_status' in data and data['availability_status'] in ['available', 'busy', 'offline']:
         rider.availability_status = data['availability_status']
     if 'profile_photo' in request.files:
@@ -100,9 +114,9 @@ def update_profile():
         rider.name = data['name']
     if 'phone' in data:
         rider.phone = data['phone']
-    rider.updated_at = datetime.utcnow()
+    rider.updated_at = datetime.now(timezone.utc)
     db.session.commit()
-    return jsonify({'msg': 'Profile updated successfully', 'rider': rider.to_dict(include_stats=True)}), 200
+    return jsonify({'msg': 'Profile updated successfully', 'rider': _get_rider_with_stats(rider)}), 200
 
 
 # ── Tasks ─────────────────────────────────────────────────────────────────────
@@ -156,23 +170,23 @@ def mark_on_way(task_id):
         Appointment.id != task_id,
     ).first()
     if existing_on_way:
-        existing_on_way.status = 'rider_accepted'
         switched_from_task_id = existing_on_way.id
-        log_task_status_change(
-            appointment_id=existing_on_way.id, from_status='rider_on_way', to_status='rider_accepted',
-            changed_by_role='system', rider_id=rider_id,
+        existing_on_way.transition_status(
+            'rider_accepted', changed_by_role='system', rider_id=rider_id,
             latitude=rider.gps_latitude if rider else None,
             longitude=rider.gps_longitude if rider else None,
-            metadata={'reason': 'task_switch', 'switched_to_task_id': task_id},
+            metadata={'reason': 'task_switch', 'switched_to_task_id': task_id}
         )
 
-    appointment.status = 'rider_on_way'
+    try:
+        appointment.transition_status(
+            'rider_on_way', changed_by_role='rider', changed_by_id=rider_id, rider_id=rider_id,
+            latitude=rider.gps_latitude, longitude=rider.gps_longitude
+        )
+    except ValueError as e:
+        return jsonify({'msg': str(e)}), 400
+
     notify_patient_rider_on_way(appointment.user_id, appointment.id, rider.name)
-    log_task_status_change(
-        appointment_id=appointment.id, from_status='rider_accepted', to_status='rider_on_way',
-        changed_by_role='rider', changed_by_id=rider_id, rider_id=rider_id,
-        latitude=rider.gps_latitude, longitude=rider.gps_longitude,
-    )
     db.session.commit()
     return jsonify({'msg': 'Status updated to on way', 'task': appointment.to_dict(),
                     'switched_from_task_id': switched_from_task_id}), 200
@@ -201,13 +215,14 @@ def mark_arrived(task_id):
     if geo_error:
         return jsonify({'msg': geo_error, 'error': 'geofence_violation'}), 422
 
-    appointment.status = 'rider_arrived'
-    appointment.arrived_at = datetime.utcnow()
-    log_task_status_change(
-        appointment_id=appointment.id, from_status='rider_on_way', to_status='rider_arrived',
-        changed_by_role='rider', changed_by_id=rider_id, rider_id=rider_id,
-        latitude=rider.gps_latitude, longitude=rider.gps_longitude,
-    )
+    try:
+        appointment.transition_status(
+            'rider_arrived', changed_by_role='rider', changed_by_id=rider_id, rider_id=rider_id,
+            latitude=rider.gps_latitude, longitude=rider.gps_longitude
+        )
+    except ValueError as e:
+        return jsonify({'msg': str(e)}), 400
+
     db.session.commit()
     return jsonify({'msg': 'Marked as arrived at patient location', 'task': appointment.to_dict()}), 200
 
@@ -244,20 +259,19 @@ def collect_sample(task_id):
         appointment.collection_latitude = float(data['latitude'])
         appointment.collection_longitude = float(data['longitude'])
 
-    prev_status = appointment.status
-    appointment.status = 'sample_collected'
-    appointment.sample_collected_at = datetime.utcnow()
+    try:
+        appointment.transition_status(
+            'sample_collected', changed_by_role='rider', changed_by_id=rider_id, rider_id=rider_id,
+            latitude=appointment.collection_latitude, longitude=appointment.collection_longitude,
+            metadata={'photo_path': appointment.sample_photo, 'notes_preview': notes[:80] if notes else None}
+        )
+    except ValueError as e:
+        return jsonify({'msg': str(e)}), 400
 
     rider = Rider.query.get(rider_id)
     notify_admin_sample_collected(appointment.id, rider.name, appointment.user.username)
     notify_patient_sample_collected(appointment.user_id, appointment.id)
 
-    log_task_status_change(
-        appointment_id=appointment.id, from_status=prev_status, to_status='sample_collected',
-        changed_by_role='rider', changed_by_id=rider_id, rider_id=rider_id,
-        latitude=appointment.collection_latitude, longitude=appointment.collection_longitude,
-        metadata={'photo_path': appointment.sample_photo, 'notes_preview': notes[:80] if notes else None},
-    )
     db.session.commit()
     return jsonify({'msg': 'Sample collected successfully', 'task': appointment.to_dict()}), 200
 
@@ -274,11 +288,12 @@ def deliver_to_lab(task_id):
         return jsonify({'msg': 'Task not found'}), 404
     if appointment.rider_id != rider_id:
         return jsonify({'msg': 'This task is not assigned to you'}), 403
-    if appointment.status != 'sample_collected':
-        return jsonify({'msg': 'Invalid status transition'}), 400
-
-    appointment.status = 'delivered_to_lab'
-    appointment.delivered_at = datetime.utcnow()
+    try:
+        appointment.transition_status(
+            'delivered_to_lab', changed_by_role='rider', changed_by_id=rider_id, rider_id=rider_id
+        )
+    except ValueError as e:
+        return jsonify({'msg': str(e)}), 400
 
     rider = Rider.query.get(rider_id)
     # Only set rider available if they have NO other active tasks remaining

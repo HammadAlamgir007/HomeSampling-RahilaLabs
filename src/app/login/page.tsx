@@ -80,8 +80,8 @@ function LoginContent() {
 
       // Store in cookies for Next.js Middleware Edge detection
       const maxAgeStr = rememberMe ? "max-age=2592000;" : "" // 30 days or session
-      document.cookie = `patient_token=${data.data.access_token}; path=/; ${maxAgeStr}`
-      document.cookie = `patient_role=patient; path=/; ${maxAgeStr}`
+      document.cookie = `patient_token=${data.data.access_token}; path=/; ${maxAgeStr} SameSite=Strict; Secure;`
+      document.cookie = `patient_role=patient; path=/; ${maxAgeStr} SameSite=Strict; Secure;`
 
       router.push(redirectPath)
     } catch (err: any) {

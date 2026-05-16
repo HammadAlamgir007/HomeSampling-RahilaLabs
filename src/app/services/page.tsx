@@ -22,7 +22,8 @@ export default function ServicesPage() {
         const res = await fetch(`${API_BASE_URL}/api/patient/tests`)
         if (res.ok) {
           const data = await res.json()
-          setTests(data)
+          const testsArray = Array.isArray(data.tests) ? data.tests : (Array.isArray(data) ? data : [])
+          setTests(testsArray)
         }
       } catch (error) {
         console.error("Failed to fetch tests", error)

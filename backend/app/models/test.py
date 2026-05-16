@@ -9,7 +9,7 @@ class Test(db.Model):
     description = db.Column(db.String(200))
     specimen = db.Column(db.String(100), nullable=True)
     reporting_time = db.Column(db.String(50), nullable=True)
-    price = db.Column(db.Float, nullable=False)
+    price = db.Column(db.Numeric(10, 2), nullable=False)
 
     def to_dict(self):
         return {
