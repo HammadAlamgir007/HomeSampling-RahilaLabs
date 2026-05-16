@@ -63,3 +63,42 @@ flutter run
 * **Intelligent PDF Syncing:** An internal script utilizes `pdftotext` to analyze raw hospital PDF format catalogs, categorize strings dynamically by layout spacing, and automatically build/update a catalog of hundreds of tests seamlessly. 
 * **Lag-Free Rendering Engine:** The patient `app/patient/book-test` and `app/services` systems use tailored memory-capped logic to successfully process 886 items natively on-device for an instantaneous search & filter experience without crashing the DOM.
 * **Smart Rider Polling:** The Flutter application implements a lightweight background ping system with `flutter_local_notifications` indicating real-time updates via a top-bar bell interface as long as the app is actively running.
+
+## 🐳 Docker Setup (Recommended)
+
+The project uses a unified Docker system with dynamic environment configuration. **No separate environment files needed!** Everything is managed in one script.
+
+**Quick Start:**
+
+```bash
+# Development (with hot reload, debug on)
+./docker.sh up development
+
+# Staging (production-like testing)
+./docker.sh up staging
+
+# Production (with Nginx, SSL ready)
+./docker.sh up production --profile prod-with-nginx
+
+# View logs
+./docker.sh logs development
+
+# Stop services
+./docker.sh down development
+```
+
+**See all commands:**
+```bash
+./docker.sh help
+```
+
+For detailed Docker documentation, see [docs/DOCKER_UNIFIED.md](docs/DOCKER_UNIFIED.md)
+
+## 📚 Documentation
+
+- **[Project Setup](docs/SETUP.md)** - Initial project setup and structure
+- **[Unified Docker Guide](docs/DOCKER_UNIFIED.md)** - Environment-based Docker Compose
+- **[Docker Quick Reference](docs/DOCKER.md)** - One-page Docker cheat sheet
+- **[Docker Setup Guide](docs/DOCKER_SETUP.md)** - Detailed Docker configuration
+- **[Docker Complete Guide](docs/DOCKER_COMPLETE.md)** - Comprehensive Docker documentation
+- **[Docker Summary](docs/DOCKER_SUMMARY.md)** - Docker overview and features

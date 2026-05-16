@@ -14,7 +14,7 @@ node -e "const fs=require('fs'); let p=require('./.next/standalone/package.json'
 
 echo "Zipping artifact..."
 cd .next/standalone
-zip -r ../../frontend-release.zip .
+zip -r ../../../frontend-release.zip .
 cd ../..
 
 echo "Deploying to Azure..."

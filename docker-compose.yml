@@ -1,0 +1,122 @@
+version: '3.9'
+
+# Unified Docker Compose Configuration
+# Use ENVIRONMENT variable to switch: development, staging, production
+# Default: development
+# Usage:
+#   ENVIRONMENT=development docker-compose up -d
+#   ENVIRONMENT=production docker-compose up -d
+#   ENVIRONMENT=staging docker-compose --profile prod-with-nginx up -d
+
+services:
+  # Backend API Service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: rahila-labs-backend-${ENVIRONMENT:-development}
+    ports:
+      - "${BACKEND_PORT:-5000}:5000"
+    environment:
+      - FLASK_ENV=${ENVIRONMENT:-development}
+      - FLASK_APP=run.py
+      - DATABASE_URL=${DATABASE_URL:-sqlite:///rahila_labs.db}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-change-me-in-production}
+    volumes:
+      - ${BACKEND_VOLUME:-./backend}:/app
+      - backend_db:/app/instance
+    networks:
+      - rahila-network
+    restart: ${RESTART_POLICY:-unless-stopped}
+    depends_on:
+      - db
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:${BACKEND_PORT:-5000}/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    command: ${BACKEND_COMMAND:-python run.py}
+
+  # Frontend Web Portal Service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: rahila-labs-frontend-${ENVIRONMENT:-development}
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=${ENVIRONMENT:-development}
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://backend:5000}
+    volumes:
+      - ${FRONTEND_VOLUME:-./frontend}:/app
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - rahila-network
+    restart: ${RESTART_POLICY:-unless-stopped}
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    command: ${FRONTEND_COMMAND:-npm run dev}
+
+  # Database Service (SQLite)
+  db:
+    image: alpine:latest
+    container_name: rahila-labs-db-${ENVIRONMENT:-development}
+    volumes:
+      - ./backend/instance:/data
+    networks:
+      - rahila-network
+    restart: ${RESTART_POLICY:-unless-stopped}
+
+  # Optional: Nginx Reverse Proxy (Production with Nginx)
+  nginx:
+    image: nginx:alpine
+    container_name: rahila-labs-nginx-${ENVIRONMENT:-development}
+    ports:
+      - "${NGINX_HTTP_PORT:-80}:80"
+      - "${NGINX_HTTPS_PORT:-443}:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - nginx_cache:/var/cache/nginx
+    networks:
+      - rahila-network
+    restart: ${RESTART_POLICY:-unless-stopped}
+    depends_on:
+      - frontend
+      - backend
+    profiles:
+      - prod-with-nginx
+
+  # Optional: Flutter Rider App (Web)
+  rider-app:
+    build:
+      context: ./rahila_labs_rider_app
+      dockerfile: Dockerfile
+    container_name: rahila-labs-rider-${ENVIRONMENT:-development}
+    ports:
+      - "${RIDER_APP_PORT:-8080}:80"
+    networks:
+      - rahila-network
+    restart: ${RESTART_POLICY:-unless-stopped}
+    profiles:
+      - rider-web
+
+networks:
+  rahila-network:
+    driver: bridge
+
+volumes:
+  backend_db:
+    driver: local
+  nginx_cache:
+    driver: local
