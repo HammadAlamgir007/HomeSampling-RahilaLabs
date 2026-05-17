@@ -40,7 +40,7 @@ def create_app(config_name=None):
     # CORS — restrict to allowed origins (configurable via CORS_ORIGINS env var)
     _allowed_origins = os.environ.get(
         'CORS_ORIGINS',
-        'http://localhost:3000,http://127.0.0.1:3000'
+        'http://localhost:3000,http://127.0.0.1:3000,https://rahila-labs-web.azurewebsites.net'
     ).split(',')
     CORS(app, resources={r"/*": {
         "origins": [o.strip() for o in _allowed_origins],
