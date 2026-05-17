@@ -17,14 +17,12 @@ from . import admin_bp
 @admin_bp.route('/stats', methods=['GET'])
 @require_admin()
 def get_dashboard_stats():
-    claims = get_jwt()
-    if claims.get('type') != 'user':
-        return jsonify({'error': 'Unauthorized access'}), 403
     total_revenue = db.session.query(db.func.sum(Test.price)) \
         .join(Appointment, Appointment.test_id == Test.id) \
         .filter(Appointment.status != 'cancelled').scalar() or 0
     return jsonify({
         'total_bookings': Appointment.query.count(),
+        'total_appointments': Appointment.query.count(),
         'pending_bookings': Appointment.query.filter_by(status='pending').count(),
         'total_patients': User.query.filter_by(role='patient').count(),
         'total_tests': Test.query.count(),

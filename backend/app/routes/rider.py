@@ -71,7 +71,7 @@ def rider_login():
     if not rider or not check_password_hash(rider.password_hash, password):
         return jsonify({'msg': 'Invalid credentials'}), 401
     access_token = create_access_token(identity=str(rider.id), additional_claims={'type': 'rider'})
-    return jsonify({'access_token': access_token, 'rider': _get_rider_with_stats(rider)}), 200
+    return jsonify({'access_token': access_token, 'token': access_token, 'rider': _get_rider_with_stats(rider)}), 200
 
 
 # ── Profile ───────────────────────────────────────────────────────────────────

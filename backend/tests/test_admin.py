@@ -1,5 +1,5 @@
 def test_admin_dashboard(client, admin_headers):
-    res = client.get('/api/admin/dashboard/stats', headers=admin_headers)
+    res = client.get('/api/admin/stats', headers=admin_headers)
     assert res.status_code == 200
     assert 'total_patients' in res.json
     assert 'total_appointments' in res.json

@@ -104,7 +104,10 @@ def register():
     if not otp_record:
         return api_response(False, "No OTP requested for this email", field="otp_code", status_code=400)
 
-    if datetime.now(timezone.utc) > otp_record.expires_at:
+    expires_at = otp_record.expires_at
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    if datetime.now(timezone.utc) > expires_at:
         return api_response(False, "OTP code has expired", field="otp_code", status_code=400)
 
     if otp_record.attempts >= 5:
@@ -269,7 +272,13 @@ def reset_password():
         return api_response(False, "Password must be at least 8 characters long, including an uppercase letter, a lowercase letter, a number, and a special character.", field="password", status_code=400)
 
     otp_record = OTP.query.filter_by(email=email, purpose='reset_password').first()
-    if not otp_record or datetime.now(timezone.utc) > otp_record.expires_at:
+    if not otp_record:
+        return api_response(False, "Invalid or expired OTP", field="otp_code", status_code=400)
+
+    expires_at = otp_record.expires_at
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    if datetime.now(timezone.utc) > expires_at:
         return api_response(False, "Invalid or expired OTP", field="otp_code", status_code=400)
 
     if otp_record.attempts >= 5:

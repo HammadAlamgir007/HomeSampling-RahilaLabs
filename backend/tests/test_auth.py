@@ -42,7 +42,7 @@ def test_logout(client, auth_headers):
     assert 'Successfully logged out' in res.json['message']
 
 def test_admin_login(client, test_db):
-    res = client.post('/api/admin/auth/login', json={
+    res = client.post('/api/admin/login', json={
         'username': 'testadmin',
         'password': 'password123'
     })
@@ -51,7 +51,7 @@ def test_admin_login(client, test_db):
     assert res.json['user']['role'] == 'admin'
 
 def test_rider_login(client, test_db):
-    res = client.post('/api/rider/auth/login', json={
+    res = client.post('/api/rider/login', json={
         'email': 'rider@example.com',
         'password': 'password123'
     })

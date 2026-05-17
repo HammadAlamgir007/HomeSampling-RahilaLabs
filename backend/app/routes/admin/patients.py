@@ -22,8 +22,10 @@ def get_patients():
     pagination = User.query.filter_by(role='patient').order_by(User.id.desc()).paginate(
         page=page, per_page=per_page, error_out=False
     )
+    patients_list = [p.to_dict() for p in pagination.items]
     return jsonify({
-        'users': [p.to_dict() for p in pagination.items],
+        'users': patients_list,
+        'patients': patients_list,
         'total': pagination.total,
         'pages': pagination.pages,
         'current_page': page,

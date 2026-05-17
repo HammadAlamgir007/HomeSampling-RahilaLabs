@@ -55,7 +55,7 @@ def add_test():
     except Exception:
         db.session.rollback()
         return jsonify({'error': 'Failed to add test due to a database error.'}), 500
-    return jsonify({'message': 'Test added', 'test': new_test.to_dict()}), 201
+    return jsonify({'message': 'Test created successfully', 'test': new_test.to_dict()}), 201
 
 
 @admin_bp.route('/tests/<int:id>', methods=['PUT'])
