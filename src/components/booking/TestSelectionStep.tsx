@@ -25,6 +25,20 @@ export default function TestSelectionStep() {
         fetchTests()
     }, [])
 
+    // Pre-select test redirected from Services tab
+    useEffect(() => {
+        if (tests.length > 0) {
+            const pendingTestId = localStorage.getItem("pending_test")
+            if (pendingTestId) {
+                const idStr = String(pendingTestId)
+                if (!selectedTests.includes(idStr)) {
+                    setSelectedTests([...selectedTests, idStr])
+                }
+                localStorage.removeItem("pending_test")
+            }
+        }
+    }, [tests, selectedTests, setSelectedTests])
+
     const categories = useMemo(() => {
         const cats = new Set(tests.map(t => t.category).filter(Boolean))
         return ['All', ...Array.from(cats).sort()]
