@@ -16,16 +16,14 @@ export default function ProfilePage() {
   const logout = useStore((state) => state.logout)
 
   const [isEditing, setIsEditing] = useState(false)
-  const [formData, setFormData] = useState(
-    user || {
-      id: "",
-      name: "",
-      email: "",
-      phone: "",
-      dateOfBirth: "",
-      address: "",
-    },
-  )
+  const [formData, setFormData] = useState({
+    id: user?.id || "",
+    username: user?.username || "",
+    email: user?.email || "",
+    phone: user?.phone || "",
+    dateOfBirth: user?.dateOfBirth || "",
+    address: user?.address || "",
+  })
 
   if (!user) {
     return (
@@ -75,7 +73,7 @@ export default function ProfilePage() {
                   <div className="space-y-6 mb-8">
                     <div>
                       <h3 className="text-sm font-semibold text-gray-500 uppercase">Full Name</h3>
-                      <p className="text-lg text-gray-900 mt-1">{user.name}</p>
+                      <p className="text-lg text-gray-900 mt-1">{user.username}</p>
                     </div>
                     <div>
                       <h3 className="text-sm font-semibold text-gray-500 uppercase">Email</h3>
@@ -117,8 +115,8 @@ export default function ProfilePage() {
                       <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
                       <input
                         type="text"
-                        name="name"
-                        value={formData.name}
+                        name="username"
+                        value={formData.username}
                         onChange={handleChange}
                         className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none shadow-sm transition-all duration-300"
                       />

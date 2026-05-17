@@ -7,7 +7,7 @@ export default function AddressStep() {
     const { address, setAddress, setStep } = useBookingContext()
 
     const handleAddressChange = (field: string, value: string) => {
-        setAddress((prev) => ({ ...prev, [field]: value }))
+        setAddress({ ...address, [field]: value })
     }
 
     return (

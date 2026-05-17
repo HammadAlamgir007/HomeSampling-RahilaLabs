@@ -161,7 +161,7 @@ export default function DashboardPage() {
             <div className="bg-gradient-to-r from-blue-700 to-indigo-600 dark:from-blue-900/80 dark:to-indigo-900/80 rounded-[2rem] p-8 sm:p-12 text-white shadow-2xl shadow-blue-900/20 relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-700">
               <div className="absolute top-0 right-0 p-32 bg-white/10 rounded-full blur-[80px]" />
               <div className="relative z-10">
-                <h1 className="text-4xl md:text-5xl font-black mb-3 tracking-tight">Hello, {user.name} 👋</h1>
+                <h1 className="text-4xl md:text-5xl font-black mb-3 tracking-tight">Hello, {user.username} 👋</h1>
                 <p className="text-blue-100 text-lg max-w-2xl font-medium">
                   <span className="inline-block bg-white/20 backdrop-blur-md px-3 py-1 rounded-lg text-white font-bold mr-4 font-mono shadow-sm">MRN: {user.mrn || "Pending"}</span>
                   Welcome to your secure health portal. Manage appointments and access your medical reports instantly.
