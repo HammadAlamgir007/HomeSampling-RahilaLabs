@@ -180,6 +180,17 @@ def _init_db(app: Flask):
     try:
         db.create_all()
 
+        # Resiliently drop unique index on booking_order_id in production MySQL
+        if os.environ.get('DATABASE_URL'):
+            try:
+                db.session.execute(db.text("ALTER TABLE appointment DROP INDEX booking_order_id;"))
+                db.session.execute(db.text("ALTER TABLE appointment ADD INDEX (booking_order_id);"))
+                db.session.commit()
+                app.logger.info("Successfully dropped unique constraint on booking_order_id and added standard index.")
+            except Exception as ex:
+                db.session.rollback()
+                app.logger.warning(f"Note: Unique index drop/add skipped or already applied: {ex}")
+
         # Seed admin
         if not User.query.filter_by(role='admin').first():
             admin_pw = _get_seed_password('DEFAULT_ADMIN_PASSWORD', 'admin')

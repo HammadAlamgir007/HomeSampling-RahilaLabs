@@ -8,7 +8,7 @@ class Appointment(db.Model):
     test_id = db.Column(db.Integer, db.ForeignKey('test.id'), nullable=False)
     appointment_date = db.Column(db.DateTime, nullable=False)
 
-    booking_order_id = db.Column(db.String(50), unique=True, nullable=True)
+    booking_order_id = db.Column(db.String(50), index=True, nullable=True)
 
     # Status: pending > rider_accepted > rider_on_way > rider_arrived > sample_collected > delivered_to_lab > completed
     status = db.Column(db.String(30), default='pending', index=True)

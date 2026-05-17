@@ -11,7 +11,9 @@ from app.models import db, User, Test, Appointment, Rider, TaskLog
 from app.utils.api import sanitize_string, sanitize_email
 from app.utils.decorators import require_admin
 from app.extensions import limiter
-from app.utils.notifications import notify_rider_assignment
+from app.utils.notifications import notify_rider_assignment, notify_patient_rider_assigned
+from app.utils.identifiers import generate_mrn
+from app.utils.mail import send_approval_email, send_sms_notification, send_whatsapp_notification
 from . import admin_bp
 
 @admin_bp.route('/appointments', methods=['GET'])
@@ -97,24 +99,7 @@ def update_appointment_status(id):
     return jsonify({'message': 'Status updated', 'appointment': appointment.to_dict()}), 200
 
 
-import os
-import uuid
-import datetime
 
-from flask import Blueprint, jsonify, request, current_app
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
-from werkzeug.security import check_password_hash, generate_password_hash
-from werkzeug.utils import secure_filename
-
-from app.models import db, User, Appointment, Test, Rider
-from app.utils.identifiers import generate_mrn
-from app.utils.notifications import (
-    notify_rider_assignment,
-    notify_patient_rider_assigned,
-)
-from app.utils.mail import send_approval_email, send_sms_notification, send_whatsapp_notification
-
-admin_bp = Blueprint('admin', __name__)
 
 
 
@@ -165,24 +150,7 @@ def bulk_update_status():
     return jsonify({'message': f'{updated} appointments updated to {new_status}', 'errors': errors}), 200
 
 
-import os
-import uuid
-import datetime
 
-from flask import Blueprint, jsonify, request, current_app
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
-from werkzeug.security import check_password_hash, generate_password_hash
-from werkzeug.utils import secure_filename
-
-from app.models import db, User, Appointment, Test, Rider
-from app.utils.identifiers import generate_mrn
-from app.utils.notifications import (
-    notify_rider_assignment,
-    notify_patient_rider_assigned,
-)
-from app.utils.mail import send_approval_email, send_sms_notification, send_whatsapp_notification
-
-admin_bp = Blueprint('admin', __name__)
 
 
 
@@ -282,24 +250,7 @@ def update_appointment(id):
     return jsonify({'message': 'Appointment updated', 'appointment': appointment.to_dict()}), 200
 
 
-import os
-import uuid
-import datetime
 
-from flask import Blueprint, jsonify, request, current_app
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
-from werkzeug.security import check_password_hash, generate_password_hash
-from werkzeug.utils import secure_filename
-
-from app.models import db, User, Appointment, Test, Rider
-from app.utils.identifiers import generate_mrn
-from app.utils.notifications import (
-    notify_rider_assignment,
-    notify_patient_rider_assigned,
-)
-from app.utils.mail import send_approval_email, send_sms_notification, send_whatsapp_notification
-
-admin_bp = Blueprint('admin', __name__)
 
 
 
