@@ -48,18 +48,34 @@ class SchedulingService:
             time_key = f"{hour:02d}:00"
             bookings_by_hour[time_key] = bookings_by_hour.get(time_key, 0) + 1
             
+        # Check if the target date is today (in Pakistan Standard Time, UTC+5)
+        pkt = timezone(timedelta(hours=5))
+        now_pkt = datetime.now(pkt)
+        is_today = target_date == now_pkt.date()
+        lead_time_hours = 2  # Minimum hours buffer before a slot can be booked
+        
         # Filter slots
         available_slots = []
         for slot in slots:
+            slot_hour = int(slot.split(':')[0])
+            
+            # If the date is today, skip slots that have already passed (+ lead time buffer)
+            if is_today:
+                cutoff_hour = now_pkt.hour + lead_time_hours
+                # Also account for partial hours: if it's 3:30 PM, the cutoff should be 5:30,
+                # so a 5 PM slot (hour 17) should NOT be available since 17 < 17.5
+                cutoff_with_minutes = now_pkt.hour + (now_pkt.minute / 60) + lead_time_hours
+                if slot_hour < cutoff_with_minutes:
+                    continue
+            
             # Maximum capacity per slot is (total_riders * 2) assuming 1 rider can do 2 collections per hour
             max_capacity = total_riders * 2
             current_bookings = bookings_by_hour.get(slot, 0)
             
             if current_bookings < max_capacity:
                 # Format to AM/PM for frontend
-                hour = int(slot.split(':')[0])
-                ampm = "AM" if hour < 12 else "PM"
-                hour12 = hour if hour <= 12 else hour - 12
+                ampm = "AM" if slot_hour < 12 else "PM"
+                hour12 = slot_hour if slot_hour <= 12 else slot_hour - 12
                 if hour12 == 0: hour12 = 12
                 
                 formatted_slot = f"{hour12:02d}:00 {ampm}"

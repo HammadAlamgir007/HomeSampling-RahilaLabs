@@ -1,0 +1,45 @@
+# Node
+node_modules/
+.next/
+out/
+
+# Backend (has its own Dockerfile)
+backend/
+
+# Flutter rider app
+rahila_labs_rider_app/
+
+# Git
+.git/
+.gitignore
+
+# Build artifacts
+dist/
+build/
+*.zip
+
+# Environment files
+.env.local
+.env*.local
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation (not needed in image)
+docs/
+
+# Misc
+*.pdf
+dummy.txt
+refactor_admin.py
+split_admin.py
+tsconfig.tsbuildinfo

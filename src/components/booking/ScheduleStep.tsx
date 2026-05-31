@@ -19,7 +19,32 @@ export default function ScheduleStep() {
                 const res = await fetch(`${API_BASE_URL}/api/v2/bookings/available-slots?date=${schedule.date}&city=${address.city}`)
                 if (res.ok) {
                     const data = await res.json()
-                    setAvailableSlots(data.slots || [])
+                    const slots: string[] = data.slots || []
+                    
+                    // Client-side safety filter: remove past slots for today's date
+                    const now = new Date()
+                    const selectedDate = new Date(schedule.date + 'T00:00:00')
+                    const isToday = selectedDate.toDateString() === now.toDateString()
+                    
+                    if (isToday) {
+                        const leadTimeHours = 2 // 2-hour buffer to allow prep time
+                        const filteredSlots = slots.filter(slot => {
+                            const [time, modifier] = slot.split(' ')
+                            let [hours, minutes] = time.split(':').map(Number)
+                            
+                            if (modifier === 'PM' && hours !== 12) hours += 12
+                            if (modifier === 'AM' && hours === 12) hours = 0
+                            
+                            const slotDate = new Date(now)
+                            slotDate.setHours(hours, minutes, 0, 0)
+                            
+                            // Only show slots at least leadTimeHours in the future
+                            return slotDate > new Date(now.getTime() + leadTimeHours * 60 * 60 * 1000)
+                        })
+                        setAvailableSlots(filteredSlots)
+                    } else {
+                        setAvailableSlots(slots)
+                    }
                 }
             } catch (error) {
                 console.error("Failed to fetch dynamic slots", error)

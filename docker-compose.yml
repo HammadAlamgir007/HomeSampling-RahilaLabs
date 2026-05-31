@@ -1,0 +1,88 @@
+# ============================================================
+# Rahila Labs — Docker Compose Configuration
+# ============================================================
+# Orchestrates the frontend and backend containers.
+#
+# Usage:
+#   docker-compose build          Build all images
+#   docker-compose up -d          Start all containers
+#   docker-compose ps             Check status
+#   docker-compose logs -f        View logs
+#   docker-compose down           Stop and remove containers
+# ============================================================
+
+version: '3.8'
+
+services:
+  # ── Backend (Flask REST API) ────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: rahila-labs-backend:v1.0
+    container_name: rahila-labs-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=development
+      - SECRET_KEY=docker-dev-secret-key-2026
+      - JWT_SECRET_KEY=docker-jwt-secret-key-2026
+      - DEFAULT_ADMIN_PASSWORD=admin123
+      - DEFAULT_DEMO_PASSWORD=demo123
+      - DEFAULT_RIDER_PASSWORD=rider123
+    volumes:
+      # Persist the SQLite database outside the container
+      - backend-data:/app/instance
+      # Persist uploaded files
+      - backend-uploads:/app/uploads
+    networks:
+      - rahila-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ── Frontend (Next.js Web Application) ──────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Tell the frontend where to find the backend API
+        NEXT_PUBLIC_API_URL: http://localhost:5000
+    image: rahila-labs-frontend:v1.0
+    container_name: rahila-labs-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://localhost:5000
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - rahila-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+# ── Volumes ──────────────────────────────────────────────────
+# Named volumes persist data even when containers are removed
+volumes:
+  backend-data:
+    driver: local
+  backend-uploads:
+    driver: local
+
+# ── Networks ─────────────────────────────────────────────────
+# Custom bridge network for inter-service communication
+networks:
+  rahila-network:
+    driver: bridge

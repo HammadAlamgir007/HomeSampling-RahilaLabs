@@ -1,0 +1,39 @@
+# Python virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Database files (will be created fresh in container)
+instance/
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+logs/
+*.log
+
+# Uploads (mount as volume instead)
+uploads/
+
+# Environment files (pass via docker env)
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# Git
+.git/
+.gitignore
+
+# Scratch/temp files
+scratch/
+out.log
