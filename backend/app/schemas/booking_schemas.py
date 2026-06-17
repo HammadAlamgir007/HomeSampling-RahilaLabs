@@ -1,4 +1,4 @@
-from marshmallow import Schema, fields, validate, validates, ValidationError
+from marshmallow import Schema, fields, validate, validates, ValidationError, validates_schema
 from datetime import datetime, timezone
 
 class AddressSchema(Schema):
