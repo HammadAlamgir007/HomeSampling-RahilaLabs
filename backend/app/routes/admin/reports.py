@@ -1,18 +1,12 @@
 import os
-import datetime
 import uuid
-import math
-from flask import request, jsonify, send_file
-from werkzeug.security import check_password_hash, generate_password_hash
+from flask import request, jsonify
 from werkzeug.utils import secure_filename
-from sqlalchemy import or_, and_, func
-
-from app.models import db, User, Test, Appointment, Rider, TaskLog
-from app.utils.api import sanitize_string, sanitize_email
-from app.utils.decorators import require_admin
-from app.extensions import limiter
-from app.utils.notifications import notify_rider_assignment
+from sqlalchemy import or_, func
 from flask import current_app
+
+from app.models import db, User, Test, Appointment
+from app.utils.decorators import require_admin
 from . import admin_bp
 
 _ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg'}
@@ -35,7 +29,7 @@ def get_reports():
         Appointment.report_path != ''
     )
     if search:
-        query = query.join(User).join(Test).filter(
+        query = query.join(User).outerjoin(Test).filter(
             or_(
                 func.lower(User.username).contains(search),
                 func.lower(Test.name).contains(search)
@@ -77,6 +71,11 @@ def get_reports():
 @admin_bp.route('/upload-report/<int:appointment_id>', methods=['POST'])
 @require_admin()
 def upload_report(appointment_id):
+    # SECURITY: Validate appointment exists BEFORE processing file
+    appointment = Appointment.query.get(appointment_id)
+    if not appointment:
+        return jsonify({'error': 'Appointment not found'}), 404
+
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
     file = request.files['file']
@@ -85,6 +84,7 @@ def upload_report(appointment_id):
     if not _allowed_file(file.filename):
         return jsonify({'error': 'File type not allowed'}), 400
 
+    # SECURITY: Check file size
     file.seek(0, os.SEEK_END)
     file_length = file.tell()
     file.seek(0, os.SEEK_SET)
@@ -94,18 +94,31 @@ def upload_report(appointment_id):
     elif ext == 'pdf' and file_length > _MAX_DOC_SIZE:
         return jsonify({'error': 'Document file size exceeds 5MB limit'}), 400
 
+    # SECURITY: Validate magic bytes match the declared file extension
+    header = file.read(8)
+    file.seek(0)
+    _MAGIC_BYTES = {
+        'pdf': [b'%PDF'],
+        'png': [b'\x89PNG'],
+        'jpg': [b'\xff\xd8\xff'],
+        'jpeg': [b'\xff\xd8\xff'],
+    }
+    expected_magic = _MAGIC_BYTES.get(ext, [])
+    if expected_magic and not any(header.startswith(m) for m in expected_magic):
+        return jsonify({'error': 'File content does not match its extension'}), 400
+
     safe_filename = secure_filename(file.filename)
     randomized_name = f"{uuid.uuid4().hex}_{safe_filename}"
     base_dir = os.path.abspath(os.path.join(current_app.root_path, '..', 'uploads', 'reports'))
     os.makedirs(base_dir, exist_ok=True)
     file.save(os.path.join(base_dir, randomized_name))
 
-    appointment = Appointment.query.get(appointment_id)
-    if appointment:
-        appointment.report_path = randomized_name
-        appointment.status = 'completed'
-        db.session.commit()
-        return jsonify({'message': 'File uploaded', 'path': randomized_name}), 200
-    return jsonify({'error': 'Appointment not found'}), 404
-
-
+    appointment.report_path = randomized_name
+    # SECURITY: Use state machine instead of directly setting status
+    try:
+        appointment.transition_status('completed', changed_by_role='admin')
+    except ValueError:
+        # If transition is invalid (e.g. already completed), just save the report path
+        pass
+    db.session.commit()
+    return jsonify({'message': 'File uploaded', 'path': randomized_name}), 200

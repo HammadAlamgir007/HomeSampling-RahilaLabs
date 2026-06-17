@@ -15,3 +15,6 @@ limiter = Limiter(
     key_func=get_remote_address,
     storage_uri=os.environ.get("RATELIMIT_STORAGE_URI", "memory://")
 )
+
+from flask_caching import Cache
+cache = Cache()

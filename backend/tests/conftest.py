@@ -1,15 +1,28 @@
+import os
 import pytest
 from app import create_app
-from app.models import db, User, Test, Rider
-from werkzeug.security import generate_password_hash
+from app.models import db, User, Test, Rider, Appointment
 
 @pytest.fixture
 def app():
     """Create and configure a new app instance for each test."""
-    # Use testing config
+    os.environ['TESTING'] = 'true'
+    # Use SQLite in-memory for fast tests
+    os.environ['DATABASE_URL'] = 'sqlite:///:memory:'
+    # Disable Celery execution in tests, tasks will run synchronously or be mocked
+    os.environ['CELERY_BROKER_URL'] = 'memory://'
+    os.environ['CELERY_RESULT_BACKEND'] = 'cache+memory://'
+    # Use a dummy Redis URL if blocklist is used, though testing blocklist requires fakeredis or skipping
+    os.environ['REDIS_URL'] = 'redis://localhost:6379/1' 
+
     app = create_app('testing')
-    
-    # Establish an application context before running the tests.
+    app.config.update({
+        "TESTING": True,
+        "WTF_CSRF_ENABLED": False,
+        "JWT_COOKIE_CSRF_PROTECT": False, # disable CSRF for testing endpoints
+    })
+
+    # create db tables
     with app.app_context():
         db.create_all()
         yield app
@@ -23,68 +36,50 @@ def client(app):
 
 @pytest.fixture
 def runner(app):
-    """A test runner for the app's Click commands."""
+    """A test runner for the app's click commands."""
     return app.test_cli_runner()
 
 @pytest.fixture
-def test_db(app):
-    """Fixture to provide a clean database with seed data."""
+def init_database(app):
+    """Seed the database with some initial data."""
     with app.app_context():
-        # Seed test user
-        user = User(
-            username="testuser",
-            email="testuser@example.com",
-            password_hash=generate_password_hash("password123"),
-            role="patient",
-            is_verified=True
-        )
-        # Seed test admin
-        admin = User(
-            username="testadmin",
-            email="admin@example.com",
-            password_hash=generate_password_hash("password123"),
-            role="admin",
-            is_verified=True
-        )
-        # Seed test rider
-        rider = Rider(
-            name="testrider",
-            email="rider@example.com",
-            phone="03001234567",
-            password_hash=generate_password_hash("password123"),
-            availability_status="available"
-        )
-        db.session.add_all([user, admin, rider])
+        # Create an admin
+        admin = User(username='admin', email='admin@test.com', role='admin')
+        admin.set_password('Admin123!')
+        
+        # Create a patient
+        patient = User(username='patient1', email='patient1@test.com', role='patient')
+        patient.set_password('Patient123!')
+        
+        # Create a rider
+        rider = Rider(name='rider1', email='rider1@test.com', phone='1234567890', availability_status='available')
+        rider.set_password('Rider123!')
+        
+        # Create a test
+        test = Test(name='CBC', code='CBC01', price=15.0, description='Complete Blood Count')
+        
+        db.session.add_all([admin, patient, rider, test])
         db.session.commit()
+        
+        # Keep references if needed by tests, though usually they'll query them
         yield db
 
 @pytest.fixture
-def auth_headers(client, test_db):
-    """Returns headers containing a valid JWT for the test user."""
-    res = client.post('/api/auth/login', json={
-        'email': 'testuser@example.com',
-        'password': 'password123'
-    })
-    token = res.json['data']['access_token']
-    return {'Authorization': f'Bearer {token}'}
-
-@pytest.fixture
-def admin_headers(client, test_db):
+def admin_headers(client, init_database):
     """Returns headers containing a valid JWT for the admin user."""
     res = client.post('/api/auth/login', json={
-        'email': 'admin@example.com',
-        'password': 'password123'
+        'email': 'admin@test.com',
+        'password': 'Admin123!'
     })
-    token = res.json['data']['access_token']
-    return {'Authorization': f'Bearer {token}'}
+    # For cookie-based JWT, client handles it. But we may need CSRF tokens.
+    # We disabled JWT_COOKIE_CSRF_PROTECT in tests, so cookies in client are enough.
+    return res
 
 @pytest.fixture
-def rider_headers(client, test_db):
-    """Returns headers containing a valid JWT for the test rider."""
+def patient_headers(client, init_database):
+    """Returns headers containing a valid JWT for the patient user."""
     res = client.post('/api/auth/login', json={
-        'email': 'rider@example.com',
-        'password': 'password123',
-        'is_rider': True
+        'email': 'patient1@test.com',
+        'password': 'Patient123!'
     })
-    token = res.json['data']['access_token']
-    return {'Authorization': f'Bearer {token}'}
+    return res

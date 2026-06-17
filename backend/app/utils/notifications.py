@@ -86,13 +86,19 @@ def get_rider_notifications(rider_id, unread_only=False):
     return query.order_by(Notification.created_at.desc()).all()
 
 
-def mark_notification_read(notification_id):
+def mark_notification_read(notification_id, rider_id=None, user_id=None):
+    """Mark a single notification as read. SECURITY: validates ownership."""
     notification = Notification.query.get(notification_id)
-    if notification:
-        notification.is_read = True
-        db.session.commit()
-        return True
-    return False
+    if not notification:
+        return False
+    # SECURITY: Verify the caller owns this notification (prevent IDOR)
+    if rider_id and notification.rider_id != rider_id:
+        return False
+    if user_id and notification.user_id != user_id:
+        return False
+    notification.is_read = True
+    db.session.commit()
+    return True
 
 
 def mark_all_read(user_id=None, rider_id=None):

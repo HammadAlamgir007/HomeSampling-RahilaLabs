@@ -12,21 +12,20 @@ from app.utils.api import sanitize_string, sanitize_email
 from app.utils.decorators import require_admin
 from app.extensions import limiter
 from app.utils.notifications import notify_rider_assignment
+from app.schemas.rider_schemas import RiderCreateSchema, RiderUpdateSchema
 from . import admin_bp
 
 @admin_bp.route('/riders', methods=['POST'])
 @require_admin()
 def create_rider():
-    data = request.get_json()
-    for field in ['name', 'email', 'phone', 'password']:
-        if field not in data:
-            return jsonify({'error': f'{field} is required'}), 400
-    email = sanitize_email(data['email'])
-    name = sanitize_string(data['name'])
+    schema = RiderCreateSchema()
+    data = schema.load(request.get_json() or {})
+    email = data['email']
+    name = data['name']
     if Rider.query.filter_by(email=email).first():
         return jsonify({'error': 'Email already exists'}), 400
     new_rider = Rider(
-        name=name, email=email, phone=sanitize_string(data['phone']),
+        name=name, email=email, phone=data['phone'],
         password_hash=generate_password_hash(data['password']), availability_status='available',
     )
     try:
@@ -41,27 +40,40 @@ def create_rider():
 @admin_bp.route('/riders', methods=['GET'])
 @require_admin()
 def get_riders():
-    riders = Rider.query.all()
+    page = request.args.get('page', 1, type=int)
+    per_page = min(request.args.get('limit', 50, type=int), 100)
+    
+    pagination = Rider.query.paginate(page=page, per_page=per_page, error_out=False)
+    riders = pagination.items
+    
     rider_dicts = {r.id: r.to_dict() for r in riders}
     for r in rider_dicts.values():
         r['stats'] = {'completed_tasks': 0, 'pending_tasks': 0}
 
+    if not rider_dicts:
+        return jsonify({'riders': [], 'total': 0, 'pages': 0, 'current_page': page}), 200
+
+    rider_ids = list(rider_dicts.keys())
+
     completed = db.session.query(Appointment.rider_id, db.func.count(Appointment.id)) \
-        .filter(Appointment.rider_id.isnot(None), Appointment.status == 'delivered_to_lab') \
+        .filter(Appointment.rider_id.in_(rider_ids), Appointment.status == 'delivered_to_lab') \
         .group_by(Appointment.rider_id).all()
     for rider_id, count in completed:
-        if rider_id in rider_dicts:
-            rider_dicts[rider_id]['stats']['completed_tasks'] = count
+        rider_dicts[rider_id]['stats']['completed_tasks'] = count
 
     pending = db.session.query(Appointment.rider_id, db.func.count(Appointment.id)) \
-        .filter(Appointment.rider_id.isnot(None), Appointment.status.in_([
+        .filter(Appointment.rider_id.in_(rider_ids), Appointment.status.in_([
             'rider_accepted', 'rider_on_way', 'rider_arrived', 'sample_collected'
         ])).group_by(Appointment.rider_id).all()
     for rider_id, count in pending:
-        if rider_id in rider_dicts:
-            rider_dicts[rider_id]['stats']['pending_tasks'] = count
+        rider_dicts[rider_id]['stats']['pending_tasks'] = count
 
-    return jsonify({'riders': list(rider_dicts.values())}), 200
+    return jsonify({
+        'riders': list(rider_dicts.values()),
+        'total': pagination.total,
+        'pages': pagination.pages,
+        'current_page': page
+    }), 200
 
 
 @admin_bp.route('/riders/<int:rider_id>', methods=['GET'])
@@ -87,20 +99,21 @@ def update_rider(rider_id):
     rider = Rider.query.get(rider_id)
     if not rider:
         return jsonify({'error': 'Rider not found'}), 404
-    data = request.get_json()
+    schema = RiderUpdateSchema()
+    data = schema.load(request.get_json() or {})
     if 'name' in data:
-        rider.name = sanitize_string(data['name'])
+        rider.name = data['name']
     if 'email' in data:
-        clean_email = sanitize_email(data['email'])
+        clean_email = data['email']
         existing = Rider.query.filter(Rider.email == clean_email, Rider.id != rider_id).first()
         if existing:
             return jsonify({'error': 'Email already exists'}), 400
         rider.email = clean_email
     if 'phone' in data:
-        rider.phone = sanitize_string(data['phone'])
-    if 'availability_status' in data and data['availability_status'] in ['available', 'busy', 'offline']:
+        rider.phone = data['phone']
+    if 'availability_status' in data:
         rider.availability_status = data['availability_status']
-    if 'password' in data and data['password']:
+    if data.get('password'):
         rider.password_hash = generate_password_hash(data['password'])
     rider.updated_at = datetime.datetime.now(datetime.timezone.utc)
     try:
@@ -119,7 +132,7 @@ def delete_rider(rider_id):
         return jsonify({'error': 'Rider not found'}), 404
     active_assignments = Appointment.query.filter(
         Appointment.rider_id == rider_id,
-        Appointment.status.in_(['assigned_to_rider', 'rider_accepted', 'rider_on_way', 'sample_collected']),
+        Appointment.status.in_(['rider_accepted', 'rider_on_way', 'rider_arrived', 'sample_collected']),
     ).count()
     if active_assignments > 0:
         return jsonify({'error': 'Cannot delete rider with active assignments'}), 400
@@ -143,7 +156,7 @@ def get_rider_performance(rider_id):
     rejected = Appointment.query.filter_by(rider_id=rider_id, status='rider_rejected').count()
     in_progress = Appointment.query.filter(
         Appointment.rider_id == rider_id,
-        Appointment.status.in_(['assigned_to_rider', 'rider_accepted', 'rider_on_way', 'sample_collected']),
+        Appointment.status.in_(['rider_accepted', 'rider_on_way', 'rider_arrived', 'sample_collected']),
     ).count()
     completed_tasks = Appointment.query.filter_by(rider_id=rider_id, status='delivered_to_lab').all()
     avg_completion_time = None
@@ -173,7 +186,24 @@ def get_rider_history(rider_id):
     rider = Rider.query.get(rider_id)
     if not rider:
         return jsonify({'error': 'Rider not found'}), 404
-    tasks = Appointment.query.filter_by(rider_id=rider_id).order_by(Appointment.created_at.desc()).all()
-    return jsonify({'rider': rider.to_dict(), 'tasks': [t.to_dict(include_rider=False) for t in tasks]}), 200
+    
+    page = request.args.get('page', 1, type=int)
+    per_page = min(request.args.get('limit', 50, type=int), 100)
+    
+    from sqlalchemy.orm import joinedload
+    pagination = Appointment.query.options(
+        joinedload(Appointment.user),
+        joinedload(Appointment.test)
+    ).filter_by(rider_id=rider_id).order_by(Appointment.created_at.desc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+    
+    return jsonify({
+        'rider': rider.to_dict(), 
+        'tasks': [t.to_dict(include_rider=False) for t in pagination.items],
+        'total': pagination.total,
+        'pages': pagination.pages,
+        'current_page': page
+    }), 200
 
 

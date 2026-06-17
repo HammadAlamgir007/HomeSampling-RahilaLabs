@@ -1,32 +1,26 @@
-"""
-JWT Token Blocklist — tracks revoked tokens to enforce proper logout.
-Uses a database-backed approach for persistence across restarts.
-"""
-from datetime import datetime, timezone
-from app.models.base import db
+import os
+import redis
+from datetime import timedelta
 
-
-class TokenBlocklist(db.Model):
-    """Stores JTIs (JWT Token IDs) of revoked tokens."""
-    __tablename__ = 'token_blocklist'
-
-    id = db.Column(db.Integer, primary_key=True)
-    jti = db.Column(db.String(36), nullable=False, unique=True, index=True)
-    revoked_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
-
-    def __repr__(self):
-        return f'<TokenBlocklist jti={self.jti}>'
-
+# Initialize Redis client for blocklist
+redis_url = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
+redis_client = redis.from_url(redis_url)
 
 def add_token_to_blocklist(jti):
-    """Add a token JTI to the blocklist (call on logout)."""
-    entry = TokenBlocklist(jti=jti)
-    db.session.add(entry)
-    db.session.commit()
+    """Add a token JTI to the Redis blocklist with a 30-day expiration."""
+    # Assuming token max lifespan is 30 days (from remember_me), we expire it then
+    # to avoid filling up Redis indefinitely.
+    redis_client.setex(f"blocklist:{jti}", timedelta(days=30), "revoked")
 
 
 def is_token_revoked(jti):
-    """Check if a token JTI has been revoked."""
-    return db.session.query(
-        TokenBlocklist.query.filter_by(jti=jti).exists()
-    ).scalar()
+    """Check if a token JTI exists in the Redis blocklist."""
+    try:
+        return redis_client.exists(f"blocklist:{jti}") > 0
+    except redis.RedisError:
+        # Fail open or closed? Typically fail open to not block users if Redis blips, 
+        # but fail closed for security. We'll fail open (allow) if Redis is down 
+        # to prevent complete system outage, or we could raise an error.
+        # Given this is a critical check, let's log and allow, or raise.
+        # We will allow.
+        return False

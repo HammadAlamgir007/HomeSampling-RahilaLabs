@@ -14,7 +14,7 @@ load_dotenv(os.path.join(_basedir, '.env'))
 class BaseConfig:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-this'
     JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or 'jwt-secret-key-change-this'
-    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=24)
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=2)  # SECURITY: short-lived tokens for healthcare
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # Default to SQLite stored in backend/instance/
@@ -33,7 +33,9 @@ class DevelopmentConfig(BaseConfig):
 class ProductionConfig(BaseConfig):
     DEBUG = False
     TESTING = False
-    JWT_COOKIE_SECURE = True        # Enforce HTTPS cookies in production
+    JWT_COOKIE_SECURE = True          # SECURITY: cookies only over HTTPS
+    JWT_COOKIE_SAMESITE = 'Lax'       # SECURITY: prevent CSRF via cross-site cookies
+    JWT_COOKIE_CSRF_PROTECT = True    # SECURITY: require CSRF token with cookie auth
 
     def __init__(self):
         super().__init__()
@@ -52,10 +54,10 @@ class ProductionConfig(BaseConfig):
         # Production DB connection pooling
         if self.SQLALCHEMY_DATABASE_URI and not self.SQLALCHEMY_DATABASE_URI.startswith('sqlite:'):
             self.SQLALCHEMY_ENGINE_OPTIONS = {
-                'pool_size': int(os.environ.get('DB_POOL_SIZE', 10)),
-                'pool_recycle': int(os.environ.get('DB_POOL_RECYCLE', 3600)),
+                'pool_size': int(os.environ.get('DB_POOL_SIZE', 20)),
+                'pool_recycle': int(os.environ.get('DB_POOL_RECYCLE', 1800)),
                 'pool_pre_ping': True,
-                'max_overflow': int(os.environ.get('DB_MAX_OVERFLOW', 20)),
+                'max_overflow': int(os.environ.get('DB_MAX_OVERFLOW', 10)),
             }
 
 

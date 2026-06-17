@@ -23,13 +23,8 @@ services:
     container_name: rahila-labs-backend
     ports:
       - "5000:5000"
-    environment:
-      - FLASK_ENV=development
-      - SECRET_KEY=docker-dev-secret-key-2026
-      - JWT_SECRET_KEY=docker-jwt-secret-key-2026
-      - DEFAULT_ADMIN_PASSWORD=admin123
-      - DEFAULT_DEMO_PASSWORD=demo123
-      - DEFAULT_RIDER_PASSWORD=rider123
+    env_file:
+      - .env  # SECURITY: Create .env from .env.docker template — never commit real secrets
     volumes:
       # Persist the SQLite database outside the container
       - backend-data:/app/instance

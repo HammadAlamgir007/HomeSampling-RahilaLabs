@@ -62,6 +62,33 @@ def _get_rider_with_stats(rider):
 @rider_bp.route('/login', methods=['POST'])
 @limiter.limit("5 per minute")
 def rider_login():
+    """
+    Rider Login Endpoint
+    ---
+    tags:
+      - Rider Auth
+    parameters:
+      - in: body
+        name: body
+        required: true
+        schema:
+          type: object
+          required:
+            - email
+            - password
+          properties:
+            email:
+              type: string
+              example: hassan@rider.com
+            password:
+              type: string
+              example: Mysecure123!
+    responses:
+      200:
+        description: Login successful
+      401:
+        description: Invalid credentials
+    """
     data = request.get_json()
     email = sanitize_email(data.get('email'))
     password = data.get('password')
@@ -307,11 +334,6 @@ def deliver_to_lab(task_id):
 
     notify_admin_sample_delivered(appointment.id, rider.name, appointment.user.username)
 
-    log_task_status_change(
-        appointment_id=appointment.id, from_status='sample_collected', to_status='delivered_to_lab',
-        changed_by_role='rider', changed_by_id=rider_id, rider_id=rider_id,
-        latitude=rider.gps_latitude, longitude=rider.gps_longitude,
-    )
     db.session.commit()
     return jsonify({'msg': 'Sample delivered to lab successfully', 'task': appointment.to_dict()}), 200
 
@@ -348,10 +370,11 @@ def get_notifications():
 @rider_bp.route('/notifications/<int:notification_id>/read', methods=['PUT'])
 @jwt_required()
 def mark_notification_as_read(notification_id):
-    _, err = _require_rider()
+    rider_id, err = _require_rider()
     if err:
         return err
-    success = mark_notification_read(notification_id)
+    # SECURITY: Pass rider_id for ownership verification (prevents IDOR)
+    success = mark_notification_read(notification_id, rider_id=rider_id)
     if success:
         return jsonify({'msg': 'Notification marked as read'}), 200
     return jsonify({'msg': 'Notification not found'}), 404

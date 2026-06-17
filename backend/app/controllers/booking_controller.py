@@ -46,8 +46,8 @@ def create_booking():
         }), 201
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
-    except Exception as e:
-        return jsonify({'error': 'Internal server error processing booking', 'details': str(e)}), 500
+    except Exception:
+        return jsonify({'error': 'Internal server error processing booking'}), 500
 
 
 @booking_bp.route('/v2/bookings', methods=['GET'])
@@ -57,8 +57,8 @@ def get_bookings():
     try:
         bookings = BookingService.get_patient_bookings(current_user_id)
         return jsonify([b.to_dict() for b in bookings]), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    except Exception:
+        return jsonify({'error': 'Failed to retrieve bookings'}), 500
 
 @booking_bp.route('/v2/bookings/available-slots', methods=['GET'])
 def get_available_slots():
@@ -73,5 +73,5 @@ def get_available_slots():
         return jsonify({'slots': slots}), 200
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
-    except Exception as e:
-        return jsonify({'error': 'Internal server error processing slots', 'details': str(e)}), 500
+    except Exception:
+        return jsonify({'error': 'Internal server error processing slots'}), 500

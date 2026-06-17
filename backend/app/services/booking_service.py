@@ -56,16 +56,16 @@ class BookingService:
             )
             db.session.add(item)
             
-            # Create the legacy appointment record for Admin/Rider visibility
-            appointment = Appointment(
-                user_id=patient_id,
-                test_id=test.id,
-                appointment_date=scheduled_datetime,
-                address=legacy_address,
-                booking_order_id=order_id,
-                status='pending'
-            )
-            db.session.add(appointment)
+        # Create a single visit (legacy appointment record) for the entire booking
+        appointment = Appointment(
+            user_id=patient_id,
+            test_id=None, # Nullable now, represents the entire booking
+            appointment_date=scheduled_datetime,
+            address=legacy_address,
+            booking_order_id=order_id,
+            status='pending'
+        )
+        db.session.add(appointment)
             
         try:
             db.session.commit()
@@ -96,4 +96,5 @@ class BookingService:
 
     @staticmethod
     def get_patient_bookings(patient_id: int):
-        return Booking.query.filter_by(user_id=patient_id).order_by(Booking.scheduled_datetime.desc()).all()
+        from sqlalchemy.orm import joinedload
+        return Booking.query.options(joinedload(Booking.items)).filter_by(user_id=patient_id).order_by(Booking.scheduled_datetime.desc()).all()

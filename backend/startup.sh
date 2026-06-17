@@ -16,6 +16,10 @@ export PORT="${PORT:-8000}"
 echo "Seeding tests database from tests_seed.json..."
 python seed_from_json.py || echo "Warning: Seeding failed"
 
+# Start Celery worker in the background so asynchronous tasks (like emails) are processed
+echo "Starting Celery worker..."
+celery -A app.celery_app worker --loglevel=info &
+
 echo "Starting gunicorn on port $PORT..."
 exec gunicorn \
   --bind "0.0.0.0:$PORT" \

@@ -22,6 +22,30 @@ def create_app(config_name=None):
     cfg = get_config(config_name)
     app.config.from_object(cfg)
 
+    # Sentry integration
+    import sentry_sdk
+    from sentry_sdk.integrations.flask import FlaskIntegration
+    sentry_dsn = os.environ.get("SENTRY_DSN")
+    if sentry_dsn:
+        sentry_sdk.init(
+            dsn=sentry_dsn,
+            integrations=[FlaskIntegration()],
+            traces_sample_rate=1.0
+        )
+
+    # Celery configuration
+    app.config.from_mapping(
+        CELERY=dict(
+            broker_url=os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0"),
+            result_backend=os.environ.get("CELERY_RESULT_BACKEND", "redis://localhost:6379/0"),
+            task_ignore_result=True,
+            broker_connection_retry_on_startup=True,
+        ),
+    )
+    
+    from .celery_app import celery_init_app
+    celery_init_app(app)
+
     # JWT cookie settings
     app.config['JWT_TOKEN_LOCATION'] = ['headers', 'cookies']
     app.config['JWT_COOKIE_SECURE'] = not app.debug   # True in production (HTTPS)
@@ -34,8 +58,47 @@ def create_app(config_name=None):
 
     # Initialize extensions
     db.init_app(app)
+    
+    from flask_migrate import Migrate
+    Migrate(app, db)
+    
+    from app.extensions import cache
+    # Configure cache (use Redis if URL provided, else simple in-memory)
+    redis_url = os.environ.get('REDIS_URL')
+    if redis_url:
+        app.config['CACHE_TYPE'] = 'RedisCache'
+        app.config['CACHE_REDIS_URL'] = redis_url
+    else:
+        app.config['CACHE_TYPE'] = 'SimpleCache'
+        
+    cache.init_app(app)
+    
     jwt.init_app(app)
     limiter.init_app(app)
+    
+    from flasgger import Swagger
+    swagger_config = {
+        "headers": [],
+        "specs": [
+            {
+                "endpoint": 'apispec_1',
+                "route": '/apispec_1.json',
+                "rule_filter": lambda rule: True,  # all in
+                "model_filter": lambda tag: True,  # all in
+            }
+        ],
+        "static_url_path": "/flasgger_static",
+        "swagger_ui": True,
+        "specs_route": "/apidocs/"
+    }
+    swagger_template = {
+        "info": {
+            "title": "Rahila Labs API",
+            "description": "API Documentation for the Rahila Labs Platform.",
+            "version": "1.0.0"
+        }
+    }
+    Swagger(app, config=swagger_config, template=swagger_template)
 
     # CORS — restrict to allowed origins (configurable via CORS_ORIGINS env var)
     _allowed_origins = os.environ.get(
@@ -58,8 +121,26 @@ def create_app(config_name=None):
     # Utility routes
     _register_utility_routes(app)
 
+    # ── SECURITY HEADERS (Talisman) ─────────────────────────────────────────
+    from flask_talisman import Talisman
+    csp = {
+        'default-src': ["'self'"],
+    }
+    # We disable force_https locally so development is not broken
+    Talisman(app, content_security_policy=csp, force_https=not app.debug)
+
+
     # Global error handler
     from werkzeug.exceptions import NotFound
+    from marshmallow.exceptions import ValidationError
+
+    @app.errorhandler(ValidationError)
+    def handle_marshmallow_error(e):
+        return jsonify({
+            "error": True,
+            "message": "Validation failed",
+            "fields": e.messages
+        }), 422
 
     @app.errorhandler(Exception)
     def handle_exception(e):

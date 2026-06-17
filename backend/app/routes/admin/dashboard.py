@@ -1,25 +1,25 @@
-import os
 import datetime
-import uuid
-import math
-from flask import request, jsonify, send_file
-from werkzeug.security import check_password_hash, generate_password_hash
-from werkzeug.utils import secure_filename
-from sqlalchemy import or_, and_, func
 
-from app.models import db, User, Test, Appointment, Rider, TaskLog
-from app.utils.api import sanitize_string, sanitize_email
+from flask import request, jsonify
+from sqlalchemy import func
+
+from app.models import db, User, Test, Appointment, BookingItem
 from app.utils.decorators import require_admin
-from app.extensions import limiter
-from app.utils.notifications import notify_rider_assignment
 from . import admin_bp
 
 @admin_bp.route('/stats', methods=['GET'])
 @require_admin()
 def get_dashboard_stats():
-    total_revenue = db.session.query(db.func.sum(Test.price)) \
+    # Revenue from legacy appointments (test_id is set)
+    legacy_revenue = db.session.query(db.func.sum(Test.price)) \
         .join(Appointment, Appointment.test_id == Test.id) \
         .filter(Appointment.status != 'cancelled').scalar() or 0
+
+    # Revenue from new architecture bookings (via BookingItem)
+    new_revenue = db.session.query(db.func.sum(BookingItem.price)).scalar() or 0
+
+    total_revenue = float(legacy_revenue) + float(new_revenue)
+
     return jsonify({
         'total_bookings': Appointment.query.count(),
         'total_appointments': Appointment.query.count(),
@@ -55,5 +55,3 @@ def get_dashboard_activity():
             time_str = "Just now"
         formatted.append({'action': item['action'], 'time': time_str})
     return jsonify(formatted), 200
-
-

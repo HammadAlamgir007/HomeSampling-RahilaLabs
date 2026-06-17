@@ -5,7 +5,7 @@ from .base import db
 class Appointment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
-    test_id = db.Column(db.Integer, db.ForeignKey('test.id'), nullable=False)
+    test_id = db.Column(db.Integer, db.ForeignKey('test.id'), nullable=True) # Now nullable for 1-to-1 Booking architecture
     appointment_date = db.Column(db.DateTime, nullable=False)
 
     booking_order_id = db.Column(db.String(50), index=True, nullable=True)
@@ -59,19 +59,37 @@ class Appointment(db.Model):
 
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
+    __table_args__ = (
+        db.Index('idx_appointment_date_status', 'appointment_date', 'status'),
+        db.Index('idx_appointment_rider_status', 'rider_id', 'status'),
+    )
+
     # Relationships
     user = db.relationship('User', backref=db.backref('appointments', lazy=True))
     test = db.relationship('Test', backref=db.backref('appointments', lazy=True))
     rider = db.relationship('Rider', backref=db.backref('assignments', lazy=True))
 
     def to_dict(self, include_rider=True):
+        from .booking import Booking
+        test_name = None
+        test_price = None
+        
+        if self.test:
+            test_name = self.test.name
+            test_price = self.test.price
+        elif self.booking_order_id:
+            booking = Booking.query.filter_by(booking_order_id=self.booking_order_id).first()
+            if booking and booking.items:
+                test_name = " + ".join([item.test.name for item in booking.items if item.test])
+                test_price = sum([item.price for item in booking.items])
+
         data = {
             'id': self.id,
             'booking_order_id': self.booking_order_id,
             'user_id': self.user_id,
             'test_id': self.test_id,
-            'test_name': self.test.name if self.test else None,
-            'test_price': self.test.price if self.test else None,
+            'test_name': test_name,
+            'test_price': test_price,
             'patient_name': self.user.username if self.user else "Unknown",
             'patient_phone': self.user.phone if self.user else None,
             'patient_city': self.user.city if self.user else None,

@@ -1,19 +1,15 @@
-import os
 import datetime
-import uuid
-import math
-from flask import request, jsonify, send_file
-from werkzeug.security import check_password_hash, generate_password_hash
-from werkzeug.utils import secure_filename
-from sqlalchemy import or_, and_, func
+from flask import request, jsonify
+from flask_jwt_extended import get_jwt_identity
+from sqlalchemy import or_
 
-from app.models import db, User, Test, Appointment, Rider, TaskLog
-from app.utils.api import sanitize_string, sanitize_email
+from app.models import db, User, Test, Appointment, Rider
 from app.utils.decorators import require_admin
 from app.extensions import limiter
 from app.utils.notifications import notify_rider_assignment, notify_patient_rider_assigned
-from app.utils.identifiers import generate_mrn
-from app.utils.mail import send_approval_email, send_sms_notification, send_whatsapp_notification
+from app.utils.mail import send_sms_notification, send_whatsapp_notification
+from app.schemas.booking_schemas import AppointmentStatusUpdateSchema
+from app.services.appointment_service import AppointmentService
 from . import admin_bp
 
 @admin_bp.route('/appointments', methods=['GET'])
@@ -21,80 +17,35 @@ from . import admin_bp
 def get_appointments():
     try:
         page = request.args.get('page', 1, type=int)
-        per_page = request.args.get('per_page', request.args.get('limit', 10, type=int), type=int)
+        per_page = min(request.args.get('per_page', request.args.get('limit', 10, type=int), type=int), 100)
         search = request.args.get('search', '').strip().lower()
-        query = Appointment.query
-        if search:
-            from sqlalchemy import or_
-            query = query.join(Appointment.user, isouter=True).join(Appointment.test, isouter=True).filter(
-                or_(
-                    User.username.ilike(f'%{search}%'),
-                    User.email.ilike(f'%{search}%'),
-                    Test.name.ilike(f'%{search}%'),
-                    Appointment.booking_order_id.ilike(f'%{search}%'),
-                    Appointment.status.ilike(f'%{search}%'),
-                )
-            )
-        pagination = query.order_by(Appointment.appointment_date.desc()).paginate(
-            page=page, per_page=per_page, error_out=False
-        )
+        from app.repositories.appointment_repository import AppointmentRepository
+        pagination = AppointmentRepository.get_all_paginated(page, per_page, search)
+        
         return jsonify({
             'appointments': [appt.to_dict() for appt in pagination.items],
             'total': pagination.total,
             'pages': pagination.pages,
-            'current_page': page,
+            'current_page': page
         }), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    except Exception:
+        return jsonify({'error': 'Failed to retrieve appointments'}), 500
 
 
 @admin_bp.route('/appointments/<int:id>/status', methods=['PUT'])
 @require_admin()
 def update_appointment_status(id):
-    data = request.get_json()
+    schema = AppointmentStatusUpdateSchema()
+    data = schema.load(request.get_json() or {})
     new_status = data.get('status')
-    if new_status not in ['pending', 'confirmed', 'collected', 'completed', 'cancelled']:
-        return jsonify({'error': 'Invalid status'}), 400
-    appointment = Appointment.query.get(id)
-    if not appointment:
-        return jsonify({'error': 'Appointment not found'}), 404
-    old_status = appointment.status
-    if new_status:
-        try:
-            appointment.transition_status(new_status, changed_by_role='admin')
-        except ValueError as e:
-            return jsonify({'error': str(e)}), 400
+    if not new_status:
+        return jsonify({'error': 'status is required'}), 400
     try:
-        db.session.commit()
-    except Exception:
-        db.session.rollback()
+        appointment = AppointmentService.update_status(id, new_status, changed_by_role='admin')
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
         return jsonify({'error': 'Failed to update status due to a database error.'}), 500
-
-    # Fire approval email + SMS/WhatsApp when admin confirms an appointment
-    if new_status == 'confirmed' and old_status != 'confirmed':
-        try:
-            patient = appointment.user
-            test = appointment.test
-            if patient and test:
-                test_date = appointment.appointment_date.strftime('%Y-%m-%d %I:%M %p') if appointment.appointment_date else 'TBD'
-                send_approval_email(
-                    patient_email=patient.email,
-                    patient_name=patient.username,
-                    mrn=patient.mrn or 'MRN-PENDING',
-                    booking_id=appointment.booking_order_id or str(appointment.id),
-                    test_name=test.name,
-                    test_date=test_date,
-                    address=appointment.address or 'Address on record',
-                )
-                # SMS notification
-                if patient.phone:
-                    sms_msg = (f"Rahila Labs: Your appointment for {test.name} on {test_date} "
-                               f"is APPROVED. Booking ID: {appointment.booking_order_id}. "
-                               f"MRN: {patient.mrn or 'N/A'}")
-                    send_sms_notification(patient.phone, sms_msg)
-                    send_whatsapp_notification(patient.phone, sms_msg)
-        except Exception as e:
-            print(f"Approval notification error (non-fatal): {e}")
 
     return jsonify({'message': 'Status updated', 'appointment': appointment.to_dict()}), 200
 
@@ -107,7 +58,8 @@ def update_appointment_status(id):
 @require_admin()
 def bulk_update_status():
     """Bulk approve or reject multiple appointments."""
-    data = request.get_json()
+    schema = AppointmentStatusUpdateSchema()
+    data = schema.load(request.get_json() or {})
     ids = data.get('ids', [])
     new_status = data.get('status')
     if not ids or new_status not in ['confirmed', 'cancelled']:
@@ -119,27 +71,20 @@ def bulk_update_status():
         if not appt:
             errors.append(f'ID {appt_id} not found')
             continue
+        old_status = appt.status  # Capture BEFORE transition
         try:
             appt.transition_status(new_status, changed_by_role='admin')
             updated += 1
         except ValueError as e:
             errors.append({'id': appt_id, 'error': str(e)})
             continue
-        if new_status == 'confirmed' and appt.status != 'confirmed':
+        if new_status == 'confirmed' and old_status != 'confirmed':
             try:
                 patient = appt.user
                 test = appt.test
                 if patient and test:
                     test_date = appt.appointment_date.strftime('%Y-%m-%d %I:%M %p') if appt.appointment_date else 'TBD'
-                    send_approval_email(
-                        patient_email=patient.email,
-                        patient_name=patient.username,
-                        mrn=patient.mrn or 'MRN-PENDING',
-                        booking_id=appt.booking_order_id or str(appt.id),
-                        test_name=test.name,
-                        test_date=test_date,
-                        address=appt.address or '',
-                    )
+                    send_approval_email.delay(appt.id)
             except Exception as e:
                 print(f"Bulk approval email error for {appt_id}: {e}")
     try:
@@ -159,66 +104,17 @@ def bulk_update_status():
 def auto_assign_rider(appointment_id):
     """Auto-pick the least-busy non-offline rider."""
     current_user_id = int(get_jwt_identity())
-    appointment = Appointment.query.get(appointment_id)
-    if not appointment:
-        return jsonify({'error': 'Appointment not found'}), 404
-
-    # Get all non-offline riders, prefer available, then busy (but not offline)
-    riders = Rider.query.filter(Rider.availability_status != 'offline').all()
-    if not riders:
-        return jsonify({'error': 'No available riders found'}), 404
-
-    # Sort: available first, then by fewest active tasks
-    def rider_load(r):
-        active = Appointment.query.filter(
-            Appointment.rider_id == r.id,
-            Appointment.status.in_(['rider_accepted', 'rider_on_way', 'sample_collected'])
-        ).count()
-        priority = 0 if r.availability_status == 'available' else 1
-        return (priority, active)
-
-    best_rider = min(riders, key=rider_load)
-
-    from datetime import timedelta
-    now = datetime.datetime.utcnow()
-    appointment.rider_id = best_rider.id
-    appointment.rider_assigned_at = now
-    appointment.rider_accepted_at = now
-    appointment.pickup_deadline = now + timedelta(hours=1)
-    appointment.delivery_deadline = now + timedelta(hours=4)
     try:
-        appointment.transition_status(
-            'rider_accepted', changed_by_role='admin', rider_id=best_rider.id
-        )
+        best_rider, appointment = AppointmentService.auto_assign_rider(appointment_id)
+        return jsonify({
+            'message': f'Rider {best_rider.name} auto-assigned successfully',
+            'rider': best_rider.to_dict(),
+            'appointment': appointment.to_dict()
+        }), 200
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
-
-    if best_rider.availability_status == 'available':
-        best_rider.availability_status = 'busy'
-
-    notify_rider_assignment(best_rider.id, appointment_id, appointment.user.username, appointment.address)
-    notify_patient_rider_assigned(appointment.user_id, appointment_id, best_rider.name)
-
-    # SMS to patient
-    try:
-        if appointment.user and appointment.user.phone:
-            send_sms_notification(
-                appointment.user.phone,
-                f"Rahila Labs: Rider {best_rider.name} has been assigned to collect your sample. Contact: {best_rider.phone}"
-            )
-            send_whatsapp_notification(
-                appointment.user.phone,
-                f"Rahila Labs: Rider {best_rider.name} has been assigned to collect your sample. Contact: {best_rider.phone}"
-            )
-    except Exception as e:
-        print(f"Auto-assign SMS error (non-fatal): {e}")
-
-    db.session.commit()
-    return jsonify({
-        'message': f'Rider {best_rider.name} auto-assigned successfully',
-        'rider': best_rider.to_dict(),
-        'appointment': appointment.to_dict()
-    }), 200
+    except Exception:
+        return jsonify({'error': 'Failed to auto-assign rider'}), 500
 
 
 
@@ -228,7 +124,8 @@ def update_appointment(id):
     appointment = Appointment.query.get(id)
     if not appointment:
         return jsonify({'error': 'Appointment not found'}), 404
-    data = request.get_json()
+    schema = AppointmentStatusUpdateSchema()
+    data = schema.load(request.get_json() or {})
     if 'date' in data:
         try:
             date_str = data['date'].replace('Z', '+00:00')
@@ -262,50 +159,21 @@ def assign_rider(appointment_id):
     rider_id = data.get('rider_id')
     if not rider_id:
         return jsonify({'error': 'rider_id is required'}), 400
-    appointment = Appointment.query.get(appointment_id)
-    if not appointment:
-        return jsonify({'error': 'Appointment not found'}), 404
-    rider = Rider.query.get(rider_id)
-    if not rider:
-        return jsonify({'error': 'Rider not found'}), 404
-    if rider.availability_status == 'offline':
-        return jsonify({'error': 'Rider is offline and cannot receive tasks'}), 400
-
-    if 'patient_lat' in data and 'patient_lng' in data:
-        appointment.patient_latitude = float(data['patient_lat'])
-        appointment.patient_longitude = float(data['patient_lng'])
-
-    from datetime import timedelta
-    now = datetime.datetime.utcnow()
-    appointment.pickup_deadline = (
-        datetime.datetime.fromisoformat(data['pickup_deadline'])
-        if 'pickup_deadline' in data
-        else now + timedelta(hours=1)
-    )
-    appointment.delivery_deadline = (
-        datetime.datetime.fromisoformat(data['delivery_deadline'])
-        if 'delivery_deadline' in data
-        else now + timedelta(hours=4)
-    )
-    appointment.priority_level = data.get('priority_level', 'normal')
-    appointment.rider_id = rider_id
-    appointment.rider_assigned_at = now
-    appointment.rider_accepted_at = now
     try:
-        appointment.transition_status(
-            'rider_accepted', changed_by_role='admin', rider_id=rider_id
+        appointment = AppointmentService.assign_rider(
+            appointment_id=appointment_id,
+            rider_id=rider_id,
+            priority_level=data.get('priority_level', 'normal'),
+            pickup_deadline=data.get('pickup_deadline'),
+            delivery_deadline=data.get('delivery_deadline'),
+            patient_lat=data.get('patient_lat'),
+            patient_lng=data.get('patient_lng')
         )
+        return jsonify({'message': 'Rider assigned and task auto-accepted', 'appointment': appointment.to_dict()}), 200
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
-
-    if rider.availability_status == 'available':
-        rider.availability_status = 'busy'
-
-    notify_rider_assignment(rider_id, appointment_id, appointment.user.username, appointment.address)
-    notify_patient_rider_assigned(appointment.user_id, appointment_id, rider.name)
-
-    db.session.commit()
-    return jsonify({'message': 'Rider assigned and task auto-accepted', 'appointment': appointment.to_dict()}), 200
+    except Exception:
+        return jsonify({'error': 'Failed to assign rider'}), 500
 
 
 @admin_bp.route('/appointments/<int:appointment_id>/reassign-rider', methods=['PUT'])
@@ -335,7 +203,7 @@ def reassign_rider(appointment_id):
             ).count()
             if remaining == 0:
                 old_rider.availability_status = 'available'
-    now = datetime.datetime.utcnow()
+    now = datetime.datetime.now(datetime.timezone.utc)
     appointment.rider_id = new_rider_id
     appointment.rider_assigned_at = now
     appointment.rider_accepted_at = now

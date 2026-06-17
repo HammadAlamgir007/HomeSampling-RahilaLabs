@@ -72,6 +72,19 @@ export const useStore = create<StoreState>()(
             toggleSidebar: () => set((s) => ({ isSidebarOpen: !s.isSidebarOpen })),
             closeSidebar: () => set({ isSidebarOpen: false }),
         }),
-        { name: 'rahila-storage', storage: createJSONStorage(() => sessionStorage) }
+        { 
+            name: 'rahila-storage', 
+            storage: createJSONStorage(() => sessionStorage),
+            // SECURITY/PERFORMANCE: Only persist auth and lightweight state to avoid massive sessionStorage bloat
+            partialize: (state) => ({ 
+                user: state.user,
+                isAuthenticated: state.isAuthenticated,
+                authToken: state.authToken,
+                darkMode: state.darkMode,
+                userRole: state.userRole,
+                admin: state.admin,
+                isSidebarOpen: state.isSidebarOpen
+            })
+        }
     )
 )

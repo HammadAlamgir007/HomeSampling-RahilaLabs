@@ -1,24 +1,17 @@
-import os
-import datetime
-import uuid
-import math
-from flask import request, jsonify, send_file
-from werkzeug.security import check_password_hash, generate_password_hash
-from werkzeug.utils import secure_filename
-from sqlalchemy import or_, and_, func
+from flask import request, jsonify
+from werkzeug.security import generate_password_hash
 
-from app.models import db, User, Test, Appointment, Rider, TaskLog
+from app.models import db, User, Appointment
 from app.utils.api import sanitize_string, sanitize_email
 from app.utils.decorators import require_admin
-from app.extensions import limiter
-from app.utils.notifications import notify_rider_assignment
+from app.utils.identifiers import generate_mrn
 from . import admin_bp
 
 @admin_bp.route('/patients', methods=['GET'])
 @require_admin()
 def get_patients():
     page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('limit', 10, type=int)
+    per_page = min(request.args.get('limit', 10, type=int), 100)
     pagination = User.query.filter_by(role='patient').order_by(User.id.desc()).paginate(
         page=page, per_page=per_page, error_out=False
     )

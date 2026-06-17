@@ -10,6 +10,10 @@
 # ── Stage 1: Base Image ─────────────────────────────────────
 FROM python:3.11-slim AS base
 
+LABEL maintainer="Rahila Labs SRE Team"
+LABEL version="1.0"
+LABEL description="Flask REST API Backend"
+
 # Set environment variables to prevent Python from writing
 # .pyc files and to ensure output is sent straight to terminal
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -18,21 +22,19 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # ── Stage 2: Install Dependencies ───────────────────────────
 WORKDIR /app
 
-# Copy requirements first for Docker layer caching —
-# dependencies only re-install when requirements.txt changes
+# Create necessary directories and non-root user early
+RUN groupadd -r appuser && useradd -r -g appuser appuser && \
+    mkdir -p instance logs uploads && \
+    chown -R appuser:appuser /app
+
+# Copy requirements first for Docker layer caching
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # ── Stage 3: Copy Application Code ─────────────────────────
-COPY . .
+COPY --chown=appuser:appuser . .
 
-# Create necessary directories
-RUN mkdir -p instance logs uploads
-
-# ── Stage 4: Create Non-Root User ───────────────────────────
-# Running as non-root is a Docker security best practice
-RUN adduser --disabled-password --gecos '' appuser && \
-    chown -R appuser:appuser /app
+# ── Stage 4: Run as Non-Root ───────────────────────────────
 USER appuser
 
 # ── Stage 5: Expose Port & Run ──────────────────────────────

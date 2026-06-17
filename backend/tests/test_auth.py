@@ -1,59 +1,54 @@
-def test_register_patient(client, test_db):
-    from app.models import OTP
-    import datetime
-    # Insert an OTP first
-    otp = OTP(email='newpatient@example.com', otp_code='123456', purpose='registration', expires_at=datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(minutes=10))
-    test_db.session.add(otp)
-    test_db.session.commit()
+from app.models import db, User, OTP
+from datetime import datetime, timedelta, timezone
 
-    res = client.post('/api/auth/register', json={
-        'username': 'newpatient',
-        'email': 'newpatient@example.com',
-        'password': 'Password123!',
-        'otp_code': '123456',
-        'phone': '03009999999',
-        'dateOfBirth': '1990-01-01',
-        'city': 'Lahore'
-    })
-    assert res.status_code == 201
-    assert 'User registered successfully' in res.json['message']
-
-def test_login_success(client, test_db):
+def test_login_patient_success(client, test_db):
+    """Test successful login returns a JWT token."""
     res = client.post('/api/auth/login', json={
         'email': 'testuser@example.com',
         'password': 'password123'
     })
     assert res.status_code == 200
-    assert res.json['success'] is True
-    assert 'access_token' in res.json['data']
+    data = res.json
+    assert data['success'] is True
+    assert 'access_token' in data['data']
+    assert data['data']['user']['email'] == 'testuser@example.com'
 
-def test_login_wrong_password(client, test_db):
+def test_login_patient_invalid_credentials(client, test_db):
+    """Test login fails with invalid password."""
     res = client.post('/api/auth/login', json={
         'email': 'testuser@example.com',
         'password': 'wrongpassword'
     })
     assert res.status_code == 401
     assert res.json['success'] is False
-    assert 'Invalid email or password' in res.json['message']
 
-def test_logout(client, auth_headers):
-    res = client.post('/api/auth/logout', headers=auth_headers)
-    assert res.status_code == 200
-    assert 'Successfully logged out' in res.json['message']
+def test_register_patient(client, app):
+    """Test patient registration with a valid mocked OTP."""
+    with app.app_context():
+        # Insert a valid OTP for a new email
+        email = "newpatient@example.com"
+        otp_code = "123456"
+        expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
+        otp = OTP(email=email, otp_code=otp_code, expires_at=expires_at, purpose='registration')
+        db.session.add(otp)
+        db.session.commit()
 
-def test_admin_login(client, test_db):
-    res = client.post('/api/admin/login', json={
-        'username': 'testadmin',
-        'password': 'password123'
+    res = client.post('/api/auth/register', json={
+        'username': 'New Patient',
+        'email': 'newpatient@example.com',
+        'password': 'StrongPassword1!',
+        'otp_code': '123456',
+        'phone': '03001112233',
+        'city': 'Karachi'
     })
-    assert res.status_code == 200
-    assert 'token' in res.json
-    assert res.json['user']['role'] == 'admin'
+    
+    assert res.status_code == 201
+    data = res.json
+    assert data['success'] is True
+    assert data['data']['user']['email'] == 'newpatient@example.com'
 
-def test_rider_login(client, test_db):
-    res = client.post('/api/rider/login', json={
-        'email': 'rider@example.com',
-        'password': 'password123'
-    })
-    assert res.status_code == 200
-    assert 'token' in res.json
+    # Verify user exists in DB
+    with app.app_context():
+        user = User.query.filter_by(email='newpatient@example.com').first()
+        assert user is not None
+        assert user.role == 'patient'

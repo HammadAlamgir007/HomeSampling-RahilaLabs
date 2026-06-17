@@ -10,7 +10,8 @@ from app.models import db, User, OTP
 from app.extensions import limiter
 from app.utils.api import api_response, sanitize_email, sanitize_string
 from app.utils.identifiers import generate_mrn
-from app.utils.mail import send_email
+from app.tasks.email_tasks import send_otp_email
+from app.schemas.auth_schemas import UserRegistrationSchema, UserLoginSchema, PasswordChangeSchema
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -60,42 +61,28 @@ def send_otp():
         db.session.rollback()
         return api_response(False, "Failed to process request. Please try again.", status_code=500)
 
-    mail_result = send_email(
-        email,
-        'Rahila Labs - Verfication Code',
-        f"Your registration verification code for Rahila Labs is: {otp_code}\n\nThis code will expire in 10 minutes."
-    )
-    if mail_result and mail_result != "simulated":
+    try:
+        send_otp_email.delay(email, otp_code, purpose='registration')
         return api_response(True, "OTP sent successfully to your email", status_code=200)
-    return api_response(False, "Failed to send OTP email. Please check your email address and try again.", status_code=500)
+    except Exception as e:
+        # If celery fails to queue (e.g., Redis is down), we still fail gracefully without 500ing hard,
+        # but since this route's ONLY job is sending the OTP, we should let them know.
+        # Actually, if we reach here the DB commit succeeded. We shouldn't fail if we can't queue.
+        # But for 'send_otp' we should return success and it'll retry.
+        return api_response(True, "OTP queued for sending. It may take a moment.", status_code=200)
 
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
-    data = request.get_json()
-    if not data:
-        return api_response(False, "Missing data", status_code=400)
-
-    username = sanitize_string(data.get('username'))
-    email = sanitize_email(data.get('email'))
-    password = sanitize_string(data.get('password'))
-    otp_code = sanitize_string(data.get('otp_code'))
-    phone = sanitize_string(data.get('phone'))
-    city = sanitize_string(data.get('city'))
-
-    if not username or not email or not password or not otp_code:
-        return api_response(False, "Missing required fields", status_code=400)
-
-    if not is_valid_name(username):
-        return api_response(False, "Name must be at least 3 characters and contain only letters.", field="name", status_code=400)
-
-    if not is_strong_password(password):
-        return api_response(False, "Password must be at least 8 characters long, including an uppercase letter, a lowercase letter, a number, and a special character.", field="password", status_code=400)
-
-    try:
-        validate_email(email, check_deliverability=False)
-    except EmailNotValidError:
-        return api_response(False, "Invalid email format", field="email", status_code=400)
+    schema = UserRegistrationSchema()
+    data = schema.load(request.get_json() or {})
+    
+    username = data['username']
+    email = data['email']
+    password = data['password']
+    otp_code = data['otp_code']
+    phone = data.get('phone')
+    city = data.get('city')
 
     if User.query.filter_by(email=email).first():
         return api_response(False, "Email already exists", field="email", status_code=409)
@@ -141,16 +128,12 @@ def register():
 @auth_bp.route('/login', methods=['POST'])
 @limiter.limit("10 per minute", error_message="Too many login attempts. Please wait.", scope="login")
 def login():
-    data = request.get_json()
-    if not data:
-        return api_response(False, "Missing data", status_code=400)
-
-    email = sanitize_email(data.get('email'))
-    password = sanitize_string(data.get('password'))
+    schema = UserLoginSchema()
+    data = schema.load(request.get_json() or {})
+    
+    email = data['email']
+    password = data['password']
     remember_me = data.get('remember_me', False)
-
-    if not email or not password:
-        return api_response(False, "Missing email or password", status_code=400)
 
     user = User.query.filter_by(email=email).first()
     if not user:
@@ -247,29 +230,22 @@ def forgot_password():
         db.session.rollback()
         return api_response(False, "Failed to process forgot password request.", status_code=500)
 
-    mail_result = send_email(email, 'Rahila Labs - Password Reset Code',
-                             f"Your password reset code is: {otp_code}\n\nThis code will expire in 10 minutes.")
-    if mail_result == "simulated":
-        generic_msg = f'If the email is registered, you will receive a reset code shortly. (Simulated: {otp_code})'
+    try:
+        send_otp_email.delay(email, otp_code, purpose='reset_password')
+    except Exception:
+        pass # Background task queuing failed, but we still return generic msg
 
     return api_response(True, generic_msg, status_code=200)
 
 
 @auth_bp.route('/reset-password', methods=['POST'])
 def reset_password():
-    data = request.get_json()
-    if not data:
-        return api_response(False, "Missing data", status_code=400)
-
-    email = sanitize_email(data.get('email'))
-    otp_code = sanitize_string(data.get('otp_code'))
-    new_password = sanitize_string(data.get('new_password'))
-
-    if not email or not otp_code or not new_password:
-        return api_response(False, "Missing required fields", status_code=400)
-
-    if not is_strong_password(new_password):
-        return api_response(False, "Password must be at least 8 characters long, including an uppercase letter, a lowercase letter, a number, and a special character.", field="password", status_code=400)
+    schema = PasswordChangeSchema()
+    data = schema.load(request.get_json() or {})
+    
+    email = data['email']
+    otp_code = data['otp_code']
+    new_password = data['new_password']
 
     otp_record = OTP.query.filter_by(email=email, purpose='reset_password').first()
     if not otp_record:

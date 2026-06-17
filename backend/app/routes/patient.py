@@ -4,14 +4,17 @@ from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 from datetime import datetime, timezone
 
 from app.models import db, Test, Appointment, User
-from app.extensions import limiter
+from app.extensions import limiter, cache
+from app.schemas.booking_schemas import BookingCreateSchema
+
 from app.utils.identifiers import generate_booking_id
-from app.utils.mail import send_booking_confirmation
+from app.tasks.email_tasks import send_booking_confirmation
 
 patient_bp = Blueprint('patient', __name__)
 
 
 @patient_bp.route('/tests', methods=['GET'])
+@cache.cached(timeout=3600, query_string=True) # Cache for 1 hour, considering pagination params
 def get_tests():
     limit = request.args.get('limit', type=int)
     offset = request.args.get('offset', 0, type=int)
@@ -35,75 +38,82 @@ def get_tests():
 @jwt_required()
 @limiter.limit("5 per minute", error_message="You are booking too quickly. Please pause.")
 def book_appointment():
+    """
+    Legacy v1 booking endpoint — now delegates to BookingService
+    so all bookings flow through the unified architecture.
+    Accepts both old-style (test_id) and new-style (test_ids) payloads.
+    """
     claims = get_jwt()
     if claims.get('type') != 'user':
         return jsonify({'error': 'Unauthorized'}), 403
 
     current_user_id = get_jwt_identity()
-    data = request.get_json()
+    schema = BookingCreateSchema()
+    data = schema.load(request.get_json() or {})
 
-    if not data or not data.get('test_id') or not data.get('date') or not data.get('address'):
-        return jsonify({'error': 'Missing required fields'}), 400
+    test_ids = data.get('test_ids')
+    if not test_ids:
+        test_ids = [data.get('test_id')]
 
+    date_str = data.get('scheduled_datetime') or data.get('date')
+    date_str_clean = date_str.replace('Z', '+00:00')
+    scheduled_datetime = datetime.fromisoformat(date_str_clean)
+
+    address_data = data.get('address_data')
+    if not address_data:
+        address_data = {'street': data.get('address'), 'city': '', 'state': 'Main', 'zipCode': ''}
+
+    from app.services.booking_service import BookingService
     try:
-        date_str = data['date'].replace('Z', '+00:00')
-        appointment_date = datetime.fromisoformat(date_str)
+        booking = BookingService.create_booking(
+            patient_id=current_user_id,
+            test_ids=test_ids,
+            address_data=address_data,
+            scheduled_datetime=scheduled_datetime,
+            notes=data.get('notes', ''),
+            idempotency_key=data.get('idempotency_key')
+        )
+        try:
+            send_booking_confirmation.delay(booking.id)
+        except Exception:
+            pass # Failed to queue email, but booking succeeded
+
+        return jsonify({
+            'success': True,
+            'message': 'Appointment booked successfully',
+            'data': {'booking': booking.to_dict()},
+        }), 201
     except ValueError as e:
-        return jsonify({'error': 'Invalid date format. Use ISO format.'}), 400
-
-    # Idempotency: prevent duplicate exact bookings unless force=true
-    force = data.get('force', False)
-    if not force:
-        existing = Appointment.query.filter_by(
-            user_id=current_user_id,
-            test_id=data['test_id'],
-            appointment_date=appointment_date,
-            status='pending',
-        ).first()
-        if existing:
-            return jsonify({'error': 'A booking for this exact test and time slot already exists.'}), 409
-
-    new_appointment = Appointment(
-        user_id=current_user_id,
-        test_id=data['test_id'],
-        appointment_date=appointment_date,
-        address=data['address'],
-        booking_order_id=generate_booking_id(),
-        status='pending',
-    )
-
-    try:
-        db.session.add(new_appointment)
-        db.session.commit()
+        return jsonify({'error': str(e)}), 400
     except Exception:
-        db.session.rollback()
         return jsonify({'error': 'Failed to create booking due to database error'}), 500
-
-    patient = User.query.get(current_user_id)
-    test = Test.query.get(data['test_id'])
-    test_name = test.name if test else "Laboratory Test"
-
-    return jsonify({
-        'message': 'Appointment booked successfully',
-        'appointment': new_appointment.to_dict(),
-        'email_sent': False, # Email only sent on admin approval now
-    }), 201
 
 
 @patient_bp.route('/bookings', methods=['GET'])
 @jwt_required()
 def get_my_bookings():
     current_user_id = int(get_jwt_identity())
+    page = request.args.get('page', 1, type=int)
+    per_page = min(request.args.get('limit', 20, type=int), 100)
     try:
-        appointments = (
-            Appointment.query
+        from sqlalchemy.orm import joinedload
+        pagination = (
+            Appointment.query.options(
+                joinedload(Appointment.test),
+                joinedload(Appointment.rider)
+            )
             .filter_by(user_id=current_user_id)
             .order_by(Appointment.appointment_date.desc())
-            .all()
+            .paginate(page=page, per_page=per_page, error_out=False)
         )
-        return jsonify([appt.to_dict() for appt in appointments]), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({
+            'bookings': [appt.to_dict() for appt in pagination.items],
+            'total': pagination.total,
+            'pages': pagination.pages,
+            'current_page': page
+        }), 200
+    except Exception:
+        return jsonify({'error': 'Failed to retrieve bookings'}), 500
 
 
 @patient_bp.route('/bookings/<int:booking_id>', methods=['DELETE'])

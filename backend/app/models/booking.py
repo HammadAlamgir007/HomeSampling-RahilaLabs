@@ -36,6 +36,10 @@ class Booking(db.Model):
         'version_id_col': version_id
     }
 
+    __table_args__ = (
+        db.Index('idx_booking_scheduled_status', 'scheduled_datetime', 'status'),
+    )
+
     # Relationships
     user = relationship('User', backref=db.backref('bookings', lazy=True))
     items = relationship('BookingItem', backref='booking', cascade='all, delete-orphan', lazy='joined')
